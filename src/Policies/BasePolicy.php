@@ -116,7 +116,7 @@ abstract class BasePolicy
         ?Model $user,
         string $action,
         string $entity,
-        Model $model = null
+        ?Model $model = null
     ): bool {
         if (! $user) {
             $user = $this->createGuestUser();

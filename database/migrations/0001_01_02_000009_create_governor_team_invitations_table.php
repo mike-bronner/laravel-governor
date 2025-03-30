@@ -16,6 +16,7 @@ class CreateGovernorTeamInvitationsTable extends Migration
 
     public function up(): void
     {
+
         Schema::create('governor_team_invitations', function (Blueprint $table): void {
             $user = app(config('genealabs-laravel-governor.models.auth'));
 

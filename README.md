@@ -21,6 +21,7 @@ Provide a simple method of managing ACL in a Laravel application built on the
 
 | Laravel | PHP            | Package |
 |---------|----------------|---------|
+| 10.x    | 8.2+           | latest  |
 | 11.x    | 8.2+           | latest  |
 | 12.x    | 8.2+           | latest  |
 | 13.x    | 8.3+           | latest  |

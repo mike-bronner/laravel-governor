@@ -9,8 +9,8 @@
         }
     ],
     "require": {
-        "illuminate/database": "^9.0|^10.0|^11.0|^12.0",
-        "illuminate/support": "^9.0|^10.0|^11.0|^12.0",
+        "illuminate/database": "^9.0|^10.0|^11.0|^12.0|^13.0",
+        "illuminate/support": "^9.0|^10.0|^11.0|^12.0|^13.0",
         "php": "^7.3|^8.0",
         "ramsey/uuid": "^4.0"
     },
@@ -18,8 +18,8 @@
         "doctrine/dbal": "^2.9",
         "fakerphp/faker": "^1.23",
         "laravel/legacy-factories": "^1.0",
-        "orchestra/testbench": "^7.0|^8.0|^9.0|^10.0",
-        "phpunit/phpunit": "^9.5|^10.0|^11.0",
+        "orchestra/testbench": "^7.0|^8.0|^9.0|^10.0|^11.0",
+        "phpunit/phpunit": "^9.5|^10.0|^11.0|^12.0",
         "symfony/thanks": "^1.2"
     },
     "autoload": {

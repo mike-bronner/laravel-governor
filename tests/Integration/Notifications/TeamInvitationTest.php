@@ -14,7 +14,7 @@ class TeamInvitationTest extends UnitTestCase
     {
         parent::setUp();
 
-        $this->user = factory(User::class)->create();
+        $this->user = User::factory()->create();
         $this->actingAs($this->user);
         $this->team = (new Team)->create([
             "name" => "Test Team",

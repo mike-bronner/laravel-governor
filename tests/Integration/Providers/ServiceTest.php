@@ -4,15 +4,23 @@ use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
 
 class ServiceTest extends UnitTestCase
 {
+    protected string $sqliteDatabase = __DIR__ . '/../../database/database.sqlite';
+
     protected function getEnvironmentSetUp($app)
     {
         parent::getEnvironmentSetUp($app);
+
+        // Wipe the persistent SQLite file so migrations always start clean.
+        if (file_exists($this->sqliteDatabase)) {
+            unlink($this->sqliteDatabase);
+        }
+        touch($this->sqliteDatabase);
 
         $app['config']->set('database.default', 'sqlite');
         $app['config']->set('database.connections.sqlite', [
             'driver' => 'sqlite',
             "url" => null,
-            'database' => __DIR__ . '/../../database/database.sqlite',
+            'database' => $this->sqliteDatabase,
             'prefix' => '',
             "foreign_key_constraints" => false,
         ]);
@@ -20,8 +28,9 @@ class ServiceTest extends UnitTestCase
 
     public function tearDown() : void
     {
-        $this->app['config']->set('database.default', 'testing');
+        parent::tearDown();
     }
+
 
     public function testEntityParsing()
     {

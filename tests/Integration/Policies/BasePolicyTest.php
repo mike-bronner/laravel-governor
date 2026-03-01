@@ -19,26 +19,26 @@ class BasePolicyTest extends UnitTestCase
     {
         parent::setUp();
 
-        $this->userWithoutRoles = factory(User::class)->create();
+        $this->userWithoutRoles = User::factory()->create();
         $this->userWithoutRoles->roles()->sync([]);
         $this->userWithoutRoles->teams()->sync([]);
-        $this->otherUser = factory(User::class)->create();
+        $this->otherUser = User::factory()->create();
         $this->otherUser->roles()->attach("SuperAdmin");
         $this->actingAs($this->otherUser);
         $this->otherTeam = (new Team)->create([
             "name" => "Test Team",
             "description" => "bla bla bla",
         ]);
-        $this->otherAuthor = factory(Author::class)->create();
+        $this->otherAuthor = Author::factory()->create();
         $this->otherAuthor->teams()->attach($this->otherTeam);
 
-        $this->user = factory(User::class)->create();
+        $this->user = User::factory()->create();
         $this->actingAs($this->user);
         $this->team = (new Team)->create([
             "name" => "Test Team",
             "description" => "bla bla bla",
         ]);
-        $this->author = factory(Author::class)->create();
+        $this->author = Author::factory()->create();
         $this->author->teams()->attach($this->team);
     }
 

@@ -18,8 +18,15 @@ Provide a simple method of managing ACL in a Laravel application built on the
  for Laravel.
 
 ## Requirements
-- PHP >=7.1.3
-- Laravel >= 5.5
+
+| Laravel | PHP            | Package |
+|---------|----------------|---------|
+| 10.x    | 8.2+           | latest  |
+| 11.x    | 8.2+           | latest  |
+| 12.x    | 8.2+           | latest  |
+| 13.x    | 8.3+           | latest  |
+
+### Additional Requirements
 - Bootstrap 3 (needs to be included in your layout file)
 - FontAwesome 4 (needs to be included in your layout file)
 

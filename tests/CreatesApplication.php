@@ -41,10 +41,8 @@ trait CreatesApplication
     {
         parent::setUp();
 
-        $this->withFactories(__DIR__ . "/database/factories");
-        $this->loadLaravelMigrations();
-        $this->loadMigrationsFrom(__DIR__ . "/../database/migrations");
         $this->loadMigrationsFrom(__DIR__ . "/database/migrations");
+        $this->loadMigrationsFrom(__DIR__ . "/../database/migrations");
         $this->artisan('migrate');
         $this->artisan('db:seed', [
             '--class' => LaravelGovernorDatabaseSeeder::class,

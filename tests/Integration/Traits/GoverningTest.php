@@ -19,13 +19,13 @@ class GoverningTest extends UnitTestCase
     {
         parent::setUp();
 
-        $this->user = factory(User::class)->create();
+        $this->user = User::factory()->create();
         $this->actingAs($this->user);
         $this->team = (new Team)->create([
             "name" => "Test Team",
             "description" => "bla bla bla",
         ]);
-        $this->author = factory(Author::class)->create();
+        $this->author = Author::factory()->create();
         $this->author->teams()->attach($this->team);
     }
 

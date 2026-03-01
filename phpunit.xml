@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     backupGlobals="false"
-    backupStaticAttributes="false"
     bootstrap="vendor/autoload.php"
     colors="true"
-    convertErrorsToExceptions="true"
-    convertNoticesToExceptions="true"
-    convertWarningsToExceptions="true"
     processIsolation="false"
     stopOnFailure="true"
-    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.0/phpunit.xsd"
 >
-  <coverage processUncoveredFiles="true">
+  <source>
     <include>
       <directory suffix=".php">./src</directory>
     </include>
-  </coverage>
+  </source>
   <testsuites>
     <testsuite name="Setup">
-      <directory>./tests/AlwaysRunFirstTest.php</directory>
+      <file>./tests/AlwaysRunFirstTest.php</file>
     </testsuite>
     <testsuite name="IntegrationTests">
       <directory suffix="Test.php">./tests/Integration</directory>

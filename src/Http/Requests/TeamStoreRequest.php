@@ -23,6 +23,7 @@ class TeamStoreRequest extends Request
             "description" => "string|nullable",
             "name" => "required|string",
             "permissions" => "array",
+            "permissions.*.*.create" => "in:no,any",
         ];
     }
 
@@ -40,6 +41,12 @@ class TeamStoreRequest extends Request
             foreach ($this->permissions as $group) {
                 foreach ($group as $entity => $actions) {
                     foreach ($actions as $action => $ownership) {
+                        if ($action === 'create'
+                            && ! in_array($ownership, ['no', 'any'], true)
+                        ) {
+                            $ownership = 'no';
+                        }
+
                         if ($ownership) {
                             (new $permissionClass)
                                 ->updateOrCreate([

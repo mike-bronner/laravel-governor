@@ -22,6 +22,7 @@ class UpdateTeamRequest extends Request
     {
         return [
             "permissions" => "array",
+            "permissions.*.*.create" => "in:no,any",
         ];
     }
 
@@ -36,6 +37,12 @@ class UpdateTeamRequest extends Request
             foreach ($this->permissions as $group) {
                 foreach ($group as $entity => $actions) {
                     foreach ($actions as $action => $ownership) {
+                        if ($action === 'create'
+                            && ! in_array($ownership, ['no', 'any'], true)
+                        ) {
+                            $ownership = 'no';
+                        }
+
                         if ('no' !== $ownership) {
                             $currentPermission = (new $permissionClass)
                                 ->firstOrNew([

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor;
 
+use GeneaLabs\LaravelGovernor\Relations\TeamMembersRelation;
 use GeneaLabs\LaravelGovernor\Traits\Governable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,12 +42,20 @@ class Team extends Model
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(
-            config('genealabs-laravel-governor.models.auth'),
-            "governor_team_user",
-            "team_id",
-            "user_id"
+        $instance = $this->newRelatedInstance(
+            config('genealabs-laravel-governor.models.auth')
         );
+
+        return (new TeamMembersRelation(
+            $instance->newQuery(),
+            $this,
+            'governor_team_user',
+            'team_id',
+            'user_id',
+            $this->getKeyName(),
+            $instance->getKeyName(),
+            'members'
+        ));
     }
 
     public function permissions(): HasMany
@@ -54,6 +63,17 @@ class Team extends Model
         return $this->hasMany(
             config('genealabs-laravel-governor.models.permission')
         );
+    }
+
+    public function removeMember(Model $user): void
+    {
+        if ($this->governor_owned_by == $user->getKey()) {
+            throw new \LogicException(
+                "The team owner cannot be removed from their own team."
+            );
+        }
+
+        $this->members()->detach($user);
     }
 
     public function getOwnerNameAttribute(): string

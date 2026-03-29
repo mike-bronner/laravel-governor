@@ -6,12 +6,22 @@
     processIsolation="false"
     stopOnFailure="true"
     xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.0/phpunit.xsd"
+    cacheResultFile=".phpunit.cache/test-results"
 >
   <source>
     <include>
       <directory suffix=".php">./src</directory>
     </include>
   </source>
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./src</directory>
+    </include>
+    <report>
+      <clover outputFile="coverage/clover.xml"/>
+      <text outputFile="php://stdout" showUncoveredFiles="true"/>
+    </report>
+  </coverage>
   <testsuites>
     <testsuite name="Setup">
       <file>./tests/AlwaysRunFirstTest.php</file>

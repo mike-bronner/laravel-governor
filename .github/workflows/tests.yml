@@ -47,4 +47,24 @@ jobs:
           composer update --prefer-dist --no-interaction
 
       - name: Run tests
-        run: vendor/bin/phpunit
+        run: XDEBUG_MODE=coverage vendor/bin/phpunit
+
+      - name: Check code coverage
+        run: |
+          if [ -f coverage/clover.xml ]; then
+            php -r "
+            \$xml = simplexml_load_file('coverage/clover.xml');
+            \$metrics = \$xml->project->metrics;
+            \$covered = (int)\$metrics['coveredstatements'];
+            \$total = (int)\$metrics['statements'];
+            \$coverage = ($covered / $total) * 100;
+            echo \"Code Coverage: {$coverage}%\n\";
+            if (\$coverage < 90) {
+              echo \"ERROR: Code coverage is below 90% threshold!\n\";
+              exit(1);
+            }
+            " || exit 1
+          else
+            echo "Coverage report not found!"
+            exit 1
+          fi

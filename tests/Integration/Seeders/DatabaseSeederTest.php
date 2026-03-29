@@ -17,14 +17,12 @@ class DatabaseSeederTest extends TestCase
         config()->set('genealabs-laravel-governor.superadmins', null);
         config()->set('genealabs-laravel-governor.admins', null);
 
+        // The main seeder is already called in setUp via CreatesApplication.
+        // Run it again with null admin config to verify it completes without errors.
         $seeder = new LaravelGovernorDatabaseSeeder();
         $seeder->setContainer(app());
-        $seeder->setCommand($this->artisan('db:seed', [
-            '--class' => LaravelGovernorDatabaseSeeder::class,
-            '--no-interaction' => true,
-        ]));
+        $seeder->run();
 
-        // Should not throw any exception
         $this->assertTrue(true);
     }
 }

@@ -28,6 +28,11 @@ class GovernorPermission extends Resource
                 ->onlyOnIndex()
                 ->sortable(),
             Text::make("Entity", "entity_name", "GeneaLabs\LaravelGovernor\Nova\GovernorEntity")
+                ->resolveUsing(function ($entityName) {
+                    $aliases = config('genealabs-laravel-governor.entity-aliases', []);
+
+                    return $aliases[$entityName] ?? $entityName;
+                })
                 ->onlyOnIndex()
                 ->sortable(),
             BelongsTo::make("Role", "role", "GeneaLabs\LaravelGovernor\Nova\GovernorRole")

@@ -13,9 +13,20 @@ class GovernorEntity extends Resource
     public function fields(Request $request)
     {
         return [
-            Text::make("name")
+            Text::make("Name", "name")
+                ->resolveUsing(function ($name) {
+                    $aliases = config('genealabs-laravel-governor.entity-aliases', []);
+
+                    return $aliases[$name] ?? $name;
+                })
                 ->sortable(),
-            // HasMany::make("Permissions"),
         ];
+    }
+
+    public function title()
+    {
+        $aliases = config('genealabs-laravel-governor.entity-aliases', []);
+
+        return $aliases[$this->name] ?? $this->name;
     }
 }

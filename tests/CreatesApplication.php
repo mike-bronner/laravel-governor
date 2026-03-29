@@ -56,7 +56,7 @@ trait CreatesApplication
             ->orderBy("name")
             ->get();
         $entities = (new $entityClass)
-            ->select("name")
+            ->select("name", "policy_class")
             ->with("group:name")
             ->orderBy("name")
             ->toBase()

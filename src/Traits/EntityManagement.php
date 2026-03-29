@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor\Traits;
 
+use GeneaLabs\LaravelGovernor\Exceptions\EntityNameCollisionException;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -26,15 +27,36 @@ trait EntityManagement
             $entityName .= " ({$packageName})";
         }
 
+        $normalizedName = ucwords($entityName);
+
         $entity = app("governor-entities")
-            ->where("name", ucwords($entityName))
+            ->where("name", $normalizedName)
             ->first();
 
-        if (! $entity) {
-            $entity = (new $entityClass)->firstOrCreate([
-                "name" => ucwords($entityName),
-            ]);
+        if ($entity) {
+            if ($entity->policy_class
+                && $entity->policy_class !== $policyClassName
+            ) {
+                throw new EntityNameCollisionException(
+                    $normalizedName,
+                    $entity->policy_class,
+                    $policyClassName
+                );
+            }
+
+            if (! $entity->policy_class) {
+                (new $entityClass)
+                    ->where("name", $normalizedName)
+                    ->update(["policy_class" => $policyClassName]);
+            }
+
+            return $entity->name;
         }
+
+        $entity = (new $entityClass)->firstOrCreate(
+            ["name" => $normalizedName],
+            ["policy_class" => $policyClassName]
+        );
 
         return $entity->name;
     }

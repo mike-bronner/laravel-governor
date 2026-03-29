@@ -18,7 +18,24 @@ class TransferTeamOwnershipRequest extends Request
     public function rules(): array
     {
         return [
-            "new_owner_id" => "required|integer",
+            "new_owner_id" => [
+                "required",
+                "integer",
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $authClass = config("genealabs-laravel-governor.models.auth");
+                    $user = (new $authClass)->find($value);
+
+                    if (! $user) {
+                        $fail("The selected user does not exist.");
+
+                        return;
+                    }
+
+                    if (! $this->team->members->contains($user->getKey())) {
+                        $fail("The new owner must be an existing member of the team.");
+                    }
+                },
+            ],
         ];
     }
 

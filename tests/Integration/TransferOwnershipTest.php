@@ -105,7 +105,8 @@ class TransferOwnershipTest extends UnitTestCase
             ["new_owner_id" => $nonMember->getKey()]
         );
 
-        // The InvalidArgumentException from the model should cause a 500
+        $response->assertSessionHasErrors("new_owner_id");
+
         $this->team->refresh();
         $this->assertEquals($this->owner->getKey(), $this->team->governor_owned_by);
     }

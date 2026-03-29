@@ -39,12 +39,37 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, pdo, pdo_sqlite
-          coverage: none
+          coverage: xdebug
 
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
-      - name: Run tests
-        run: vendor/bin/phpunit
+      - name: Run tests with coverage
+        run: XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover coverage.xml
+
+      - name: Check code coverage threshold
+        run: |
+          COVERAGE=$(php -r "
+          \$xml = new SimpleXMLElement(file_get_contents('coverage.xml'));
+          \$metrics = \$xml->project->metrics;
+          echo (int)\$metrics['coveredstatements'] . ',' . (int)\$metrics['statements'];
+          " | awk -F',' '{printf \"%.1f\", (\$1/\$2)*100}')
+          
+          echo \"Code Coverage: ${COVERAGE}%\"
+          
+          # Use Python for accurate percentage calculation
+          python3 << 'EOF'
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          covered = int(root.find('.//project/metrics').get('coveredstatements', 0))
+          total = int(root.find('.//project/metrics').get('statements', 0))
+          percentage = (covered / total * 100) if total > 0 else 0
+          print(f"Code Coverage: {percentage:.1f}%")
+          if percentage < 90:
+              print(f"ERROR: Code coverage {percentage:.1f}% is below 90% threshold")
+              exit(1)
+          print(f"SUCCESS: Code coverage {percentage:.1f}% meets 90% threshold")
+          EOF

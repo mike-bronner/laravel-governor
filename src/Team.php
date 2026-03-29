@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use InvalidArgumentException;
 
 class Team extends Model
 {
@@ -60,5 +61,23 @@ class Team extends Model
     {
         return $this->owner->name
             ?? "";
+    }
+
+    public function transferOwnership(Model $newOwner): self
+    {
+        if (! $this->members->contains($newOwner->getKey())) {
+            throw new InvalidArgumentException(
+                "The new owner must be an existing member of the team."
+            );
+        }
+
+        $this->governor_owned_by = $newOwner->getKey();
+        $this->save();
+
+        if (! $this->members->contains($newOwner->getKey())) {
+            $this->members()->attach($newOwner);
+        }
+
+        return $this;
     }
 }

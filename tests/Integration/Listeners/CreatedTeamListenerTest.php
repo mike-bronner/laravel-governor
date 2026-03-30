@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GeneaLabs\LaravelGovernor\Tests\Integration\Listeners;
 
 use GeneaLabs\LaravelGovernor\Permission;
@@ -10,7 +12,7 @@ use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
 
 class CreatedTeamListenerTest extends UnitTestCase
 {
-    protected $user;
+    protected User $user;
 
     public function setUp(): void
     {
@@ -20,7 +22,7 @@ class CreatedTeamListenerTest extends UnitTestCase
         $this->actingAs($this->user);
     }
 
-    public function testTeamCreationSeedsPermissionsFromOwnerRoles()
+    public function testTeamCreationSeedsPermissionsFromOwnerRoles(): void
     {
         $role = (new Role)->find('Member');
         $this->user->roles()->syncWithoutDetaching([$role->name]);
@@ -65,7 +67,7 @@ class CreatedTeamListenerTest extends UnitTestCase
         $this->assertEquals('own', $viewPermission->ownership_name);
     }
 
-    public function testTeamCreationPreservesDefaultBehaviorWhenOwnerHasNoRolePermissions()
+    public function testTeamCreationPreservesDefaultBehaviorWhenOwnerHasNoRolePermissions(): void
     {
         $team = (new Team)->create([
             'name' => 'Empty Team',
@@ -80,7 +82,7 @@ class CreatedTeamListenerTest extends UnitTestCase
         $this->assertTrue($team->members->contains($this->user));
     }
 
-    public function testNewTeamMemberInheritsTeamPermissions()
+    public function testNewTeamMemberInheritsTeamPermissions(): void
     {
         $role = (new Role)->find('Member');
         $this->user->roles()->syncWithoutDetaching([$role->name]);
@@ -120,7 +122,7 @@ class CreatedTeamListenerTest extends UnitTestCase
         );
     }
 
-    public function testTeamOwnerCanOverridePermissionsAfterCreation()
+    public function testTeamOwnerCanOverridePermissionsAfterCreation(): void
     {
         $role = (new Role)->find('Member');
         $this->user->roles()->syncWithoutDetaching([$role->name]);
@@ -149,7 +151,7 @@ class CreatedTeamListenerTest extends UnitTestCase
         $this->assertEquals('any', $seededPermission->fresh()->ownership_name);
     }
 
-    public function testDuplicatePermissionsAcrossRolesAreDeduped()
+    public function testDuplicatePermissionsAcrossRolesAreDeduped(): void
     {
         $memberRole = (new Role)->find('Member');
         $adminRole = (new Role)->firstOrCreate(
@@ -186,7 +188,47 @@ class CreatedTeamListenerTest extends UnitTestCase
         $this->assertCount(1, $teamPermissions);
     }
 
-    public function testTeamCreationWithoutAuthDoesNotSeedPermissions()
+    public function testDifferentOwnershipLevelsAcrossRolesAreBothSeeded(): void
+    {
+        $memberRole = (new Role)->find('Member');
+        $adminRole = (new Role)->firstOrCreate(
+            ['name' => 'Admin'],
+            ['description' => 'Admin role for testing']
+        );
+
+        $this->user->roles()->syncWithoutDetaching([$memberRole->name, $adminRole->name]);
+
+        // Same entity/action but different ownership
+        (new Permission)->create([
+            'role_name' => 'Member',
+            'entity_name' => 'author',
+            'action_name' => 'view',
+            'ownership_name' => 'own',
+        ]);
+        (new Permission)->create([
+            'role_name' => 'Admin',
+            'entity_name' => 'author',
+            'action_name' => 'view',
+            'ownership_name' => 'any',
+        ]);
+
+        $team = (new Team)->create([
+            'name' => 'Multi Ownership Team',
+            'description' => 'Test different ownership levels',
+        ]);
+
+        $teamPermissions = (new Permission)
+            ->where('team_id', $team->getKey())
+            ->where('entity_name', 'author')
+            ->where('action_name', 'view')
+            ->get();
+
+        $this->assertCount(2, $teamPermissions);
+        $this->assertTrue($teamPermissions->contains('ownership_name', 'own'));
+        $this->assertTrue($teamPermissions->contains('ownership_name', 'any'));
+    }
+
+    public function testTeamCreationWithoutAuthDoesNotSeedPermissions(): void
     {
         auth()->logout();
 

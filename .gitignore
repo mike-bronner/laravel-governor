@@ -1,6 +1,7 @@
 /.idea
 /vendor
 /node_modules
+/tests/database/database.sqlite
 package-lock.json
 composer.phar
 composer.lock
@@ -8,3 +9,4 @@ phpunit.xml
 .phpunit.result.cache
 .DS_Store
 Thumbs.db
+coverage/

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GeneaLabs\LaravelGovernor\Providers;
 
 use GeneaLabs\LaravelGovernor\Console\Commands\Publish;
+use GeneaLabs\LaravelGovernor\Console\Commands\Setup;
 use GeneaLabs\LaravelGovernor\Http\Middleware\ParseCustomPolicyActions;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedInvitationListener;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedListener;
@@ -25,7 +26,7 @@ class Service extends AggregateServiceProvider
         parent::register();
 
         $this->mergeConfigFrom(__DIR__ . '/../../config/config.php', 'genealabs-laravel-governor');
-        $this->commands(Publish::class);
+        $this->commands(Publish::class, Setup::class);
     }
 
     public function boot(): void

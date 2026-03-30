@@ -75,7 +75,7 @@
                                             class="w-full rounded-md border-gray-300"
                                             name="entity_names[]"
                                             :multiple="true"
-                                            :options="$entities->pluck('name', 'name')"
+                                            :options="$entities->pluck('name')->mapWithKeys(fn ($name) => [$name => config('genealabs-laravel-governor.entity-aliases')[$name] ?? $name])"
                                         />
                                     </div>
                                 </div>

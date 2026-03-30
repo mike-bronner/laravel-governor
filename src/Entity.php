@@ -23,6 +23,13 @@ class Entity extends Model
 
     public $incrementing = false;
 
+    public function displayName(): string
+    {
+        $aliases = config('genealabs-laravel-governor.entity-aliases', []);
+
+        return $aliases[$this->name] ?? $this->name;
+    }
+
     public function group(): BelongsTo
     {
         return $this->belongsTo(

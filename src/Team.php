@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 class Team extends Model
 {
     use Governable;
@@ -60,5 +59,15 @@ class Team extends Model
     {
         return $this->owner->name
             ?? "";
+    }
+
+    public function transferOwnership(Model $newOwner): self
+    {
+        $this->loadMissing('members');
+
+        $this->governor_owned_by = $newOwner->getKey();
+        $this->save();
+
+        return $this;
     }
 }

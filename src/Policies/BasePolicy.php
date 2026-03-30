@@ -137,11 +137,14 @@ abstract class BasePolicy
 
         $ownership = 'other';
 
-        if (
-            $model
-            && $user->getKey() == $model->governor_owned_by
-        ) {
-            $ownership = 'own';
+        if ($model) {
+            $model->unsetRelation('governorOwner');
+            $ownable = $model->governorOwner;
+            $ownerId = $ownable?->user_id;
+
+            if ($ownerId !== null && $user->getKey() == $ownerId) {
+                $ownership = 'own';
+            }
         }
 
         $filteredPermissions = $this->filterPermissions($action, $entity, $ownership);

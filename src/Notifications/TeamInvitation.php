@@ -25,9 +25,11 @@ class TeamInvitation extends Notification
     public function toMail($notifiable) : MailMessage
     {
         $appUrl = config("app.url");
+        $ownerName = $this->invitation->ownedBy?->name ?? "A team admin";
+        $teamName = $this->invitation->team?->name ?? "the team";
         $message = [
-            "You have been invited by {$this->invitation->ownedBy->name}",
-            "to join team '{$this->invitation->team->name}' on {$appUrl}."
+            "You have been invited by {$ownerName}",
+            "to join team '{$teamName}' on {$appUrl}."
         ];
         $route = route(
             "genealabs.laravel-governor.invitations.update",

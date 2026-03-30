@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace GeneaLabs\LaravelGovernor\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
@@ -47,10 +48,9 @@ trait Governable
                     ->whereHas("teams", function ($query) {
                         $query->whereIn("governor_teamables.team_id", auth()->user()->teams->pluck("id"));
                     })
-                    ->orWhere(
-                        "{$query->getModel()->getTable()}.governor_owned_by",
-                        auth()->user()->getKey()
-                    );
+                    ->orWhereHas("governorOwner", function ($ownerQuery) {
+                        $ownerQuery->where("governor_ownables.user_id", auth()->user()->getKey());
+                    });
             }
 
             if ($query->getModel()->getTable() === $authTable) {
@@ -60,10 +60,9 @@ trait Governable
                 );
             }
 
-            return $query->where(
-                "{$query->getModel()->getTable()}.governor_owned_by",
-                auth()->user()->getKey(),
-            );
+            return $query->whereHas("governorOwner", function ($ownerQuery) {
+                $ownerQuery->where("governor_ownables.user_id", auth()->user()->getKey());
+            });
         }
 
         return $query->whereRaw("1 = 2");
@@ -82,12 +81,45 @@ trait Governable
             ->where("entity_name", $entityName);
     }
 
-    public function ownedBy(): BelongsTo
+    public function governorOwner(): MorphOne
     {
-        return $this->belongsTo(
-            config("genealabs-laravel-governor.models.auth"),
-            "governor_owned_by"
+        return $this->morphOne(
+            config("genealabs-laravel-governor.models.ownable", \GeneaLabs\LaravelGovernor\GovernorOwnable::class),
+            "ownable"
         );
+    }
+
+    /**
+     * @deprecated Use governorOwner() instead. This method will be removed in a future version.
+     *
+     * Returns the owning user via the polymorphic governor_ownables table.
+     * Previously returned a BelongsTo against the governor_owned_by column.
+     */
+    public function getOwnedByAttribute(): ?Model
+    {
+        $this->unsetRelation('governorOwner');
+        $ownable = $this->governorOwner;
+
+        if ($ownable) {
+            return $ownable->owner;
+        }
+
+        return null;
+    }
+
+    public function getGovernorOwnedByAttribute()
+    {
+        // Always unset and reload to ensure fresh query, since ownership tracking
+        // moved to polymorphic table and may not be pre-loaded.
+        $this->unsetRelation('governorOwner');
+        $ownable = $this->governorOwner;
+
+        if ($ownable) {
+            return $ownable->user_id;
+        }
+
+        // Fall back to the deprecated column value if the model has it
+        return $this->attributes['governor_owned_by'] ?? null;
     }
 
     public function teams(): MorphToMany

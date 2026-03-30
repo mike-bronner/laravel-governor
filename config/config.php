@@ -81,4 +81,22 @@ return [
     "superadmins" => env("GOVERNOR_SUPERADMINS"),
     "admins" => env("GOVERNOR_ADMINS"),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Entity Aliases
+    |--------------------------------------------------------------------------
+    |
+    | Define display aliases for entity names. Keys are the raw entity
+    | names (as stored in the database), and values are the display
+    | names shown in the UI. Any entity not listed here will display
+    | its original name.
+    |
+    | Example:
+    |   'entity-aliases' => [
+    |       'User' => 'Team Member',
+    |       'Author (MyPackage)' => 'Content Author',
+    |   ],
+    */
+    'entity-aliases' => [],
+
 ];

@@ -44,9 +44,7 @@ class Service extends AggregateServiceProvider
         $this->app
             ->singleton('governor-actions', function () use ($cache) {
                 return $cache->remember('actions', function () {
-                    $actionClass = app(config('genealabs-laravel-governor.models.action'));
-
-                    return (new $actionClass)
+                    return app(config('genealabs-laravel-governor.models.action'))
                         ->orderBy("name")
                         ->get();
                 });
@@ -54,9 +52,7 @@ class Service extends AggregateServiceProvider
         $this->app
             ->singleton('governor-entities', function () use ($cache) {
                 return $cache->remember('entities', function () {
-                    $entityClass = app(config('genealabs-laravel-governor.models.entity'));
-
-                    return (new $entityClass)
+                    return app(config('genealabs-laravel-governor.models.entity'))
                         ->select("name", "policy_class")
                         ->with("group:name")
                         ->orderBy("name")
@@ -67,9 +63,7 @@ class Service extends AggregateServiceProvider
         $this->app
             ->singleton("governor-permissions", function () use ($cache) {
                 return $cache->remember('permissions', function () {
-                    $permissionClass = config("genealabs-laravel-governor.models.permission");
-
-                    return (new $permissionClass)
+                    return app(config("genealabs-laravel-governor.models.permission"))
                         ->with("role", "team")
                         ->toBase()
                         ->get();
@@ -78,9 +72,7 @@ class Service extends AggregateServiceProvider
         $this->app
             ->singleton("governor-roles", function () use ($cache) {
                 return $cache->remember('roles', function () {
-                    $roleClass = config("genealabs-laravel-governor.models.role");
-
-                    return (new $roleClass)
+                    return app(config("genealabs-laravel-governor.models.role"))
                         ->select('name')
                         ->toBase()
                         ->get();

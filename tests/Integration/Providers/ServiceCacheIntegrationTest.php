@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 
 class ServiceCacheIntegrationTest extends IntegrationTestCase
 {
-    public function test_governor_singletons_use_cache_when_enabled(): void
+    public function testGovernorSingletonsUseCacheWhenEnabled(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -18,32 +18,28 @@ class ServiceCacheIntegrationTest extends IntegrationTestCase
         $cache = app(GovernorCache::class);
         $cache->flush();
 
-        // Forget all singleton instances to force re-resolution through cache
         app()->forgetInstance('governor-actions');
         app()->forgetInstance('governor-entities');
         app()->forgetInstance('governor-permissions');
         app()->forgetInstance('governor-roles');
 
-        // Resolve each singleton — this executes the closure bodies in Service::boot()
         $actions = app('governor-actions');
         $entities = app('governor-entities');
         $permissions = app('governor-permissions');
         $roles = app('governor-roles');
 
-        // Values should now be cached
         $this->assertTrue(Cache::has('governor:actions'));
         $this->assertTrue(Cache::has('governor:entities'));
         $this->assertTrue(Cache::has('governor:permissions'));
         $this->assertTrue(Cache::has('governor:roles'));
 
-        // Values should be collections (not null)
         $this->assertNotNull($actions);
         $this->assertNotNull($entities);
         $this->assertNotNull($permissions);
         $this->assertNotNull($roles);
     }
 
-    public function test_governor_singletons_work_without_cache(): void
+    public function testGovernorSingletonsWorkWithoutCache(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => false]);
 
@@ -57,19 +53,15 @@ class ServiceCacheIntegrationTest extends IntegrationTestCase
         $permissions = app('governor-permissions');
         $roles = app('governor-roles');
 
-        // Should not be cached
         $this->assertFalse(Cache::has('governor:actions'));
-
-        // But values should still be returned
         $this->assertNotNull($actions);
         $this->assertNotNull($entities);
         $this->assertNotNull($permissions);
         $this->assertNotNull($roles);
     }
 
-    public function test_lookup_table_observers_registered_on_all_models(): void
+    public function testLookupTableObserversRegisteredOnAllModels(): void
     {
-        // Verify the observer is registered by modifying a model and checking cache invalidation
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
 
@@ -77,9 +69,7 @@ class ServiceCacheIntegrationTest extends IntegrationTestCase
         $cache->remember('actions', fn () => 'test-data');
         $this->assertTrue(Cache::has('governor:actions'));
 
-        // Modifying any observed model should flush the cache
-        $actionClass = config('genealabs-laravel-governor.models.action');
-        $action = (new $actionClass)::first();
+        $action = app(config('genealabs-laravel-governor.models.action'))->first();
 
         if ($action) {
             $action->touch();

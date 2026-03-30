@@ -20,6 +20,10 @@ class GovernorCache
 
     public function remember(string $key, Closure $callback): mixed
     {
+        if (! in_array($key, self::KEYS, true)) {
+            throw new \InvalidArgumentException("Unknown Governor cache key: {$key}");
+        }
+
         if (! $this->isEnabled()) {
             return $callback();
         }

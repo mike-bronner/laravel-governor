@@ -199,6 +199,24 @@ Often it is desirable to let the user see only the items that they have access
     - `viewable()`
     - `viewAnyable()`
 
+### Caching
+Governor can cache lookup table queries (roles, actions, entities, permissions)
+across requests to reduce database load. This is disabled by default.
+
+To enable caching, publish the config file and update the `cache` section:
+```php
+'cache' => [
+    'enabled' => true,
+    'ttl' => 3600, // seconds, or null for "forever"
+],
+```
+
+Cache is automatically invalidated when any lookup table model is modified.
+Invalidation is coarse-grained: a change to any single lookup table (e.g. a
+role) flushes the cache for all lookup tables. This keeps the invalidation
+logic simple and reliable, which is appropriate given that lookup tables change
+infrequently.
+
 ### Tables
 Tables will automatically be updated with a `governor_owned_by` column that references
  the user that created the entry. There is no more need to run separate

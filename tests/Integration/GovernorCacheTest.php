@@ -25,7 +25,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->governorCache = app(GovernorCache::class);
     }
 
-    public function test_cache_is_populated_on_first_lookup_and_reused(): void
+    public function testCacheIsPopulatedOnFirstLookupAndReused(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -59,7 +59,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertEquals($actions->count(), $cachedActions->count());
     }
 
-    public function test_modifying_action_flushes_cache(): void
+    public function testModifyingActionFlushesCache(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -84,7 +84,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $action->save();
     }
 
-    public function test_modifying_role_flushes_cache(): void
+    public function testModifyingRoleFlushesCache(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -104,7 +104,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $role->delete();
     }
 
-    public function test_modifying_ownership_flushes_cache(): void
+    public function testModifyingOwnershipFlushesCache(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -121,7 +121,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertFalse(Cache::has('governor:actions'));
     }
 
-    public function test_deleting_lookup_entry_flushes_cache(): void
+    public function testDeletingLookupEntryFlushesCache(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -147,7 +147,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertFalse(Cache::has('governor:roles'));
     }
 
-    public function test_cached_lookups_reduce_query_count(): void
+    public function testCachedLookupsReduceQueryCount(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -173,7 +173,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertSame(0, $secondCallQueries, 'Cached lookup should not query the database');
     }
 
-    public function test_cache_disabled_always_runs_closure(): void
+    public function testCacheDisabledAlwaysRunsClosure(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => false]);
 
@@ -190,7 +190,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertSame(2, $callCount, 'Closure should be called every time when cache is disabled');
     }
 
-    public function test_cache_with_null_ttl_stores_forever(): void
+    public function testCacheWithNullTtlStoresForever(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => null]);
@@ -204,7 +204,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertTrue(Cache::has('governor:actions'));
     }
 
-    public function test_forget_clears_single_cache_key(): void
+    public function testForgetClearsSingleCacheKey(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -223,7 +223,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertTrue(Cache::has('governor:entities'), 'Other keys should remain after forget()');
     }
 
-    public function test_forget_is_safe_when_key_does_not_exist(): void
+    public function testForgetIsSafeWhenKeyDoesNotExist(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -236,7 +236,7 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertFalse(Cache::has('governor:nonexistent'));
     }
 
-    public function test_flush_clears_all_governor_cache_keys(): void
+    public function testFlushClearsAllGovernorCacheKeys(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -258,5 +258,12 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertFalse(Cache::has('governor:entities'));
         $this->assertFalse(Cache::has('governor:permissions'));
         $this->assertFalse(Cache::has('governor:roles'));
+    }
+
+    public function testRememberRejectsUnknownKey(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->governorCache->remember('unknown-key', fn () => 'data');
     }
 }

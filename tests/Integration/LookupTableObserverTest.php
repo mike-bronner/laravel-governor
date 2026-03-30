@@ -26,7 +26,7 @@ class LookupTableObserverTest extends IntegrationTestCase
         $this->observer = app(LookupTableObserver::class);
     }
 
-    public function test_saved_event_flushes_cache_and_clears_singletons(): void
+    public function testSavedEventFlushesCacheAndClearsSingletons(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -55,7 +55,7 @@ class LookupTableObserverTest extends IntegrationTestCase
         $this->assertNotSame('stale-actions', app('governor-actions'));
     }
 
-    public function test_deleted_event_flushes_cache_and_clears_singletons(): void
+    public function testDeletedEventFlushesCacheAndClearsSingletons(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -82,14 +82,14 @@ class LookupTableObserverTest extends IntegrationTestCase
         $this->assertFalse(Cache::has('governor:entities'));
     }
 
-    public function test_observer_is_injected_with_governor_cache(): void
+    public function testObserverIsInjectedWithGovernorCache(): void
     {
         $observer = app(LookupTableObserver::class);
 
         $this->assertInstanceOf(LookupTableObserver::class, $observer);
     }
 
-    public function test_entity_modification_triggers_observer(): void
+    public function testEntityModificationTriggersObserver(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
@@ -115,21 +115,25 @@ class LookupTableObserverTest extends IntegrationTestCase
         }
     }
 
-    public function test_permission_modification_triggers_observer(): void
+    public function testPermissionModificationTriggersObserver(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);
         config(['genealabs-laravel-governor.cache.ttl' => 3600]);
 
+        $permission = Permission::create([
+            'role_name' => Role::first()->name,
+            'entity_name' => Entity::first()->name,
+            'action_name' => Action::first()->name,
+            'ownership_name' => 'any',
+        ]);
+
         $this->governorCache->remember('permissions', fn () => 'cached');
         $this->assertTrue(Cache::has('governor:permissions'));
 
-        $permission = Permission::first();
+        $permission->touch();
 
-        if ($permission) {
-            $permission->touch();
-            $this->assertFalse(Cache::has('governor:permissions'));
-        } else {
-            $this->markTestSkipped('No permission records to test with');
-        }
+        $this->assertFalse(Cache::has('governor:permissions'));
+
+        $permission->delete();
     }
 }

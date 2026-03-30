@@ -6,16 +6,30 @@ namespace GeneaLabs\LaravelGovernor\Tests\Integration\Traits;
 
 use GeneaLabs\LaravelGovernor\Entity;
 use GeneaLabs\LaravelGovernor\Exceptions\EntityNameCollisionException;
+use GeneaLabs\LaravelGovernor\Tests\Fixtures\Article;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\Author;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Alternate\Author as AlternateAuthorPolicy;
+use GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\ArticlePolicy;
 use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
+use GeneaLabs\LaravelGovernor\Traits\EntityManagement;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
-use PHPUnit\Framework\Attributes\Test;
 
 class EntityManagementTest extends UnitTestCase
 {
-    #[Test]
-    public function it_detects_entity_name_collision_for_same_named_policies(): void
+    use EntityManagement;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        cache()->forget("genealabs:laravel-governor:policies");
+    }
+
+    // ── Collision detection ──────────────────────────────────────────
+
+    public function testDetectsEntityNameCollisionForSameNamedPolicies(): void
     {
         $this->expectException(EntityNameCollisionException::class);
         $this->expectExceptionMessage('Entity name collision detected');
@@ -26,34 +40,24 @@ class EntityManagementTest extends UnitTestCase
             'GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Alternate\Author'
         );
 
-        // The setup already registered the Author policy and created
-        // its entity via parsePolicies(). Now register a second Author
-        // policy with a different FQCN that resolves to the same name.
-
-        // First ensure the existing entity has its policy_class set
         $existingEntity = Entity::where('name', 'like', '%Author%')
             ->whereNotNull('policy_class')
             ->first();
 
         if (! $existingEntity) {
-            // Force policy_class on the existing entity
             Entity::where('name', 'like', '%Author%')->update([
                 'policy_class' => 'GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Author',
             ]);
 
-            // Refresh the cached entities
             $this->refreshGovernorEntities();
         }
 
-        // Register the alternate policy and trigger entity resolution
         Gate::policy(Author::class, AlternateAuthorPolicy::class);
         $this->getEntity(AlternateAuthorPolicy::class);
     }
 
-    #[Test]
-    public function it_stores_policy_class_on_new_entities(): void
+    public function testStoresPolicyClassOnNewEntities(): void
     {
-        // Clear all entities to start fresh
         Entity::query()->delete();
         $this->refreshGovernorEntities();
 
@@ -66,39 +70,28 @@ class EntityManagementTest extends UnitTestCase
         $this->assertEquals($policyClass, $entity->policy_class);
     }
 
-    #[Test]
-    public function it_backfills_policy_class_on_existing_entities_without_one(): void
+    public function testBackfillsPolicyClassOnExistingEntitiesWithoutOne(): void
     {
-        // Find an entity and clear its policy_class
-        $entity = Entity::first();
-        $originalName = $entity->name;
-
-        Entity::where('name', $originalName)->update(['policy_class' => null]);
-        $this->refreshGovernorEntities();
-
-        // Re-resolve via a known policy
         $policyClass = 'GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Author';
         $entity = Entity::where('name', 'like', '%Author%')->first();
 
-        if ($entity) {
-            Entity::where('name', $entity->name)->update(['policy_class' => null]);
-            $this->refreshGovernorEntities();
-
-            $this->getEntity($policyClass);
-
-            $updated = Entity::where('name', $entity->name)->first();
-            $this->assertEquals($policyClass, $updated->policy_class);
-        } else {
+        if (! $entity) {
             $this->markTestSkipped('No Author entity found to test backfill.');
         }
+
+        Entity::where('name', $entity->name)->update(['policy_class' => null]);
+        $this->refreshGovernorEntities();
+
+        $this->getEntity($policyClass);
+
+        $updated = Entity::where('name', $entity->name)->first();
+        $this->assertEquals($policyClass, $updated->policy_class);
     }
 
-    #[Test]
-    public function it_allows_same_policy_to_resolve_without_collision(): void
+    public function testAllowsSamePolicyToResolveWithoutCollision(): void
     {
         $policyClass = 'GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Author';
 
-        // Ensure entity exists with this policy_class
         $entity = Entity::where('name', 'like', '%Author%')->first();
         if ($entity && ! $entity->policy_class) {
             Entity::where('name', $entity->name)->update([
@@ -107,19 +100,16 @@ class EntityManagementTest extends UnitTestCase
             $this->refreshGovernorEntities();
         }
 
-        // Should not throw — same policy resolving again
         $name = $this->getEntity($policyClass);
 
         $this->assertNotEmpty($name);
     }
 
-    #[Test]
-    public function collision_message_identifies_both_policy_classes(): void
+    public function testCollisionMessageIdentifiesBothPolicyClasses(): void
     {
         $existingClass = 'GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Author';
         $alternateClass = AlternateAuthorPolicy::class;
 
-        // Ensure entity has the existing policy class
         $entity = Entity::where('name', 'like', '%Author%')->first();
         if ($entity) {
             Entity::where('name', $entity->name)->update([
@@ -138,37 +128,8 @@ class EntityManagementTest extends UnitTestCase
         }
     }
 
-    private function refreshGovernorEntities(): void
-    {
-        $entityClass = config('genealabs-laravel-governor.models.entity');
-        $entities = (new $entityClass)
-            ->select('name', 'policy_class')
-            ->with('group:name')
-            ->orderBy('name')
-            ->toBase()
-            ->get();
+    // ── Policy discovery ─────────────────────────────────────────────
 
-        app()->instance('governor-entities', $entities);
-    }
-
-    /**
-     * Use the EntityManagement trait's getEntity method via a
-     * test-specific helper that exposes the protected method.
-     */
-    private function getEntity(string $policyClassName): string
-    {
-        $helper = new class {
-            use \GeneaLabs\LaravelGovernor\Traits\EntityManagement;
-
-            public function resolveEntity(string $policyClassName): string
-            {
-                return $this->getEntity($policyClassName);
-            }
-        };
-
-        return $helper->resolveEntity($policyClassName);
-    }
-    
     public function testGetPoliciesReturnsManuallyRegisteredPolicies(): void
     {
         $policies = $this->getPolicies();
@@ -184,7 +145,6 @@ class EntityManagementTest extends UnitTestCase
     {
         $gate = app(GateContract::class);
 
-        // Verify ArticlePolicy is NOT manually registered
         $registeredPolicies = $gate->policies();
         $this->assertNotContains(
             ArticlePolicy::class,
@@ -192,7 +152,6 @@ class EntityManagementTest extends UnitTestCase
             'ArticlePolicy should not be manually registered for this test',
         );
 
-        // Configure policy_paths to point at our test fixtures
         config()->set('genealabs-laravel-governor.policy_paths', [
             __DIR__ . '/../../Fixtures/Policies',
         ]);
@@ -238,32 +197,55 @@ class EntityManagementTest extends UnitTestCase
         );
 
         $entityName = $this->getEntity(ArticlePolicy::class);
-        $this->assertStringContainsString(
-            'Article',
-            $entityName,
-            'Entity name should contain Article',
-        );
+        $this->assertStringContainsString('Article', $entityName);
 
         $entityClass = config('genealabs-laravel-governor.models.entity');
         $entity = (new $entityClass())
             ->where('name', 'like', '%Article%')
             ->first();
 
-        $this->assertNotNull(
-            $entity,
-            'Entity should be created when getEntity() is called with ArticlePolicy',
-        );
+        $this->assertNotNull($entity);
     }
 
     public function testGetEntityFromModelWorksForAutoDiscoveredPolicy(): void
     {
         $entityName = $this->getEntityFromModel(Article::class);
 
-        $this->assertNotEmpty(
-            $entityName,
-            'Auto-discovered policy should resolve an entity name for the Article model',
-        );
+        $this->assertNotEmpty($entityName);
     }
+
+    public function testGetPoliciesResultIsCached(): void
+    {
+        $first = $this->getPolicies();
+        $second = $this->getPolicies();
+
+        $this->assertEquals($first->toArray(), $second->toArray());
+        $this->assertNotNull(cache()->get("genealabs:laravel-governor:policies"));
+    }
+
+    // ── Tokenizer ────────────────────────────────────────────────────
+
+    public function testResolveClassNameFromFileUsesTokenizer(): void
+    {
+        $filePath = __DIR__ . '/../../Fixtures/Policies/ArticlePolicy.php';
+
+        $result = $this->resolveClassNameFromFile($filePath);
+
+        $this->assertSame(ArticlePolicy::class, $result);
+    }
+
+    public function testResolveClassNameFromFileReturnsNullForInvalidFile(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'test');
+        file_put_contents($tmpFile, '<?php echo "no class here";');
+
+        $result = $this->resolveClassNameFromFile($tmpFile);
+
+        $this->assertNull($result);
+        unlink($tmpFile);
+    }
+
+    // ── Entity resolution ────────────────────────────────────────────
 
     public function testGetEntityReturnsEmptyStringForPolicyWithoutPackageName(): void
     {
@@ -340,32 +322,18 @@ class EntityManagementTest extends UnitTestCase
         $this->assertStringContainsString('Laravel Governor', $result);
     }
 
-    public function testResolveClassNameFromFileUsesTokenizer(): void
+    // ── Helpers ───────────────────────────────────────────────────────
+
+    private function refreshGovernorEntities(): void
     {
-        $filePath = __DIR__ . '/../../Fixtures/Policies/ArticlePolicy.php';
+        $entityClass = config('genealabs-laravel-governor.models.entity');
+        $entities = (new $entityClass)
+            ->select("name", "policy_class")
+            ->with("group:name")
+            ->orderBy("name")
+            ->toBase()
+            ->get();
 
-        $result = $this->resolveClassNameFromFile($filePath);
-
-        $this->assertSame(ArticlePolicy::class, $result);
-    }
-
-    public function testResolveClassNameFromFileReturnsNullForInvalidFile(): void
-    {
-        $tmpFile = tempnam(sys_get_temp_dir(), 'test');
-        file_put_contents($tmpFile, '<?php echo "no class here";');
-
-        $result = $this->resolveClassNameFromFile($tmpFile);
-
-        $this->assertNull($result);
-        unlink($tmpFile);
-    }
-
-    public function testGetPoliciesResultIsCached(): void
-    {
-        $first = $this->getPolicies();
-        $second = $this->getPolicies();
-
-        $this->assertEquals($first->toArray(), $second->toArray());
-        $this->assertNotNull(cache()->get("genealabs:laravel-governor:policies"));
+        app()->instance('governor-entities', $entities);
     }
 }

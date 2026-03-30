@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddPolicyClassToGovernorEntitiesTable extends Migration
+return new class extends Migration
 {
     public function up(): void
     {
@@ -23,4 +23,4 @@ class AddPolicyClassToGovernorEntitiesTable extends Migration
             $table->dropColumn('policy_class');
         });
     }
-}
+};

@@ -7,6 +7,7 @@ Nova.booting((Vue, router) => {
     Vue.component("multiselect", require("vue-multiselect").default);
     Vue.component('permissions-tool', require('./components/PermissionsTool').default);
     Vue.component("permissions", require('./components/Permissions').default);
+    Vue.component('team-switcher', require('./components/TeamSwitcher').default);
     router.addRoutes([
         {
             name: 'laravel-nova-governor-roles',

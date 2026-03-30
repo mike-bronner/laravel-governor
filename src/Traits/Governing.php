@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor\Traits;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -33,6 +34,20 @@ trait Governing
         $roleClass = config("genealabs-laravel-governor.models.role");
 
         return $this->belongsToMany($roleClass, 'governor_role_user', 'user_id', 'role_name');
+    }
+
+    public function currentTeam(): BelongsTo
+    {
+        return $this->belongsTo(
+            config('genealabs-laravel-governor.models.team'),
+            'current_team_id'
+        );
+    }
+
+    public function switchTeam(int $teamId): void
+    {
+        $this->update(['current_team_id' => $teamId]);
+        $this->load('currentTeam');
     }
 
     public function ownedTeams(): HasMany

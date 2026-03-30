@@ -19,4 +19,6 @@ Route::resource("/groups", "GroupController");
 Route::resource("/permissions", "PermissionController");
 Route::resource("/roles", "RoleController");
 Route::resource("/teams", "TeamController");
+Route::get("/team-switcher", "TeamSwitcherController@index");
+Route::post("/team-switcher", "TeamSwitcherController@store");
 Route::resource("/users", "UserController");

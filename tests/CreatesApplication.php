@@ -33,7 +33,6 @@ trait CreatesApplication
             'GeneaLabs\LaravelGovernor\Providers\Service',
             'GeneaLabs\LaravelGovernor\Providers\Auth',
             'GeneaLabs\LaravelGovernor\Providers\Route',
-            'GeneaLabs\LaravelGovernor\Providers\Nova',
         ];
     }
 
@@ -56,7 +55,7 @@ trait CreatesApplication
             ->orderBy("name")
             ->get();
         $entities = (new $entityClass)
-            ->select("name")
+            ->select("name", "policy_class")
             ->with("group:name")
             ->orderBy("name")
             ->toBase()

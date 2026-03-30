@@ -22,6 +22,7 @@ class UpdateTeamRequest extends Request
     {
         return [
             "permissions" => "array",
+            "permissions.*.*.create" => "in:no,any",
         ];
     }
 

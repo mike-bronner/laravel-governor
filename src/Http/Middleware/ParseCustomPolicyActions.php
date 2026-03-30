@@ -7,15 +7,17 @@ namespace GeneaLabs\LaravelGovernor\Http\Middleware;
 use Closure;
 use GeneaLabs\LaravelGovernor\Action;
 use GeneaLabs\LaravelGovernor\Policies\BasePolicy;
+use GeneaLabs\LaravelGovernor\Traits\EntityManagement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use ReflectionClass;
 use ReflectionMethod;
-use ReflectionObject;
 use Symfony\Component\HttpFoundation\Response;
 
 class ParseCustomPolicyActions
 {
+    use EntityManagement;
+
     public function handle(Request $request, Closure $next): Response
     {
         $this->registerCustomPolicyActions();
@@ -41,7 +43,7 @@ class ParseCustomPolicyActions
 
                         if (! $action) {
                             $actionClass = app(config('genealabs-laravel-governor.models.action'));
-                            $action = (new $actionClass)
+                            $action = (new $actionClass())
                                 ->firstOrCreate([
                                     "name" => "{$modelClass}:{$method}",
                                 ]);
@@ -56,7 +58,9 @@ class ParseCustomPolicyActions
 
     protected function getCustomActionMethods(string $policyClass): Collection
     {
-        return cache()->remember("genealabs:laravel-governor:custom-action-methods:policy-{$policyClass}", 300, function () use ($policyClass): Collection {
+        $cacheKey = "genealabs:laravel-governor:custom-action-methods:policy-{$policyClass}";
+
+        return cache()->remember($cacheKey, 300, function () use ($policyClass): Collection {
             $parentClass = new ReflectionClass(get_parent_class($policyClass));
             $parentMethods = collect($parentClass->getMethods(ReflectionMethod::IS_PUBLIC))
                 ->pluck("name");
@@ -67,18 +71,6 @@ class ParseCustomPolicyActions
             return $methods
                 ->diff($parentMethods)
                 ->sort();
-        });
-    }
-
-    protected function getPolicies(): Collection
-    {
-        return cache()->remember("genealabs:laravel-governor:policies", 300, function (): Collection {
-            $gate = app('Illuminate\Contracts\Auth\Access\Gate');
-            $reflectedGate = new ReflectionObject($gate);
-            $policies = $reflectedGate->getProperty("policies");
-            $policies->setAccessible(true);
-
-            return collect($policies->getValue($gate));
         });
     }
 }

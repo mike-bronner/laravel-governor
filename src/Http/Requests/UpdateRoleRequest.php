@@ -28,6 +28,7 @@ class UpdateRoleRequest extends Request
             'name' => 'required|string',
             "description" => "string|nullable",
             "permissions" => "array",
+            "permissions.*.*.create" => "in:no,any",
         ];
     }
 

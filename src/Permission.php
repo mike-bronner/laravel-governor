@@ -38,6 +38,16 @@ class Permission extends Model
     {
         parent::boot();
 
+        static::saving(function (self $permission) {
+            if ($permission->action_name === 'create'
+                && ! in_array($permission->ownership_name, ['no', 'any'], true)
+            ) {
+                throw new \InvalidArgumentException(
+                    "The 'create' action only allows 'no' or 'any' ownership. Got: '{$permission->ownership_name}'."
+                );
+            }
+        });
+
         static::saved(function () {
             self::syncPermissionsSingleton();
         });

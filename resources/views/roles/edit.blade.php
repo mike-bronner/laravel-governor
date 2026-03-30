@@ -274,7 +274,7 @@
                                                         name="permissions[{{ urlencode($group) }}][{{ urlencode($entity) }}][create]"
                                                         label=""
                                                         class="form-select text-sm rounded-md border-gray-300"
-                                                        :options="$ownerships"
+                                                        :options="$ownerships->except(['own', 'other'])"
                                                         :selectedValues="collect($permission['create'])"
                                                     />
                                                 </td>

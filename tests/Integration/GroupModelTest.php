@@ -17,7 +17,9 @@ class GroupModelTest extends UnitTestCase
 
         $groupName = 'RelGroup' . uniqid();
         $group = Group::create(['name' => $groupName]);
-        $entity->update(['group_name' => $groupName]);
+
+        $entity->group_name = $groupName;
+        $entity->save();
 
         $group->refresh();
 

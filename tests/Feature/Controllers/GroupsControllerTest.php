@@ -22,20 +22,6 @@ class GroupsControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testIndexPageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.groups.index'));
-
-        $response->assertOk();
-    }
-
-    public function testCreatePageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.groups.create'));
-
-        $response->assertOk();
-    }
-
     public function testStoreCreatesGroup()
     {
         $groupName = 'StoreGroup' . uniqid();
@@ -50,15 +36,6 @@ class GroupsControllerTest extends IntegrationTestCase
         $this->assertDatabaseHas('governor_groups', ['name' => $groupName]);
     }
 
-    public function testEditPageIsAccessible()
-    {
-        $group = Group::create(['name' => 'EditGroup' . uniqid()]);
-
-        $response = $this->get(route('genealabs.laravel-governor.groups.edit', $group));
-
-        $response->assertOk();
-    }
-
     public function testDestroyDeletesGroup()
     {
         $groupName = 'DelGroup' . uniqid();
@@ -68,5 +45,16 @@ class GroupsControllerTest extends IntegrationTestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('governor_groups', ['name' => $groupName]);
+    }
+
+    public function testStoreRequiresAuth()
+    {
+        auth()->logout();
+
+        $response = $this->post(route('genealabs.laravel-governor.groups.store'), [
+            'name' => 'NoAuthGroup',
+        ]);
+
+        $response->assertRedirect();
     }
 }

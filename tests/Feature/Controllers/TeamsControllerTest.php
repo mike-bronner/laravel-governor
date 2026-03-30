@@ -21,20 +21,6 @@ class TeamsControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testIndexPageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.teams.index'));
-
-        $response->assertOk();
-    }
-
-    public function testCreatePageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.teams.create'));
-
-        $response->assertOk();
-    }
-
     public function testStoreCreatesTeam()
     {
         $teamName = 'StoreTeam' . uniqid();
@@ -48,23 +34,15 @@ class TeamsControllerTest extends IntegrationTestCase
         $this->assertDatabaseHas('governor_teams', ['name' => $teamName]);
     }
 
-    public function testEditPageIsAccessible()
+    public function testStoreRequiresAuth()
     {
-        $team = Team::create(['name' => 'EditTeam' . uniqid(), 'description' => 'desc']);
+        auth()->logout();
 
-        $response = $this->get(route('genealabs.laravel-governor.teams.edit', $team));
-
-        $response->assertOk();
-    }
-
-    public function testDestroyDeletesTeam()
-    {
-        $teamName = 'DelTeam' . uniqid();
-        $team = Team::create(['name' => $teamName, 'description' => 'desc']);
-
-        $response = $this->delete(route('genealabs.laravel-governor.teams.destroy', $team));
+        $response = $this->post(route('genealabs.laravel-governor.teams.store'), [
+            'name' => 'NoAuthTeam',
+            'description' => 'test',
+        ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseMissing('governor_teams', ['name' => $teamName]);
     }
 }

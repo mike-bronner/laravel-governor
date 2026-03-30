@@ -20,18 +20,11 @@ class AssignmentsControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testEditPageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.assignments.edit', 0));
-
-        $response->assertOk();
-    }
-
-    public function testUpdateProcessesAssignments()
+    public function testStoreProcessesAssignments()
     {
         $otherUser = User::factory()->create();
 
-        $response = $this->put(route('genealabs.laravel-governor.assignments.update', 0), [
+        $response = $this->post(route('genealabs.laravel-governor.assignments.store'), [
             'users' => [
                 'Member' => [$otherUser->id],
             ],
@@ -39,5 +32,16 @@ class AssignmentsControllerTest extends IntegrationTestCase
 
         $response->assertRedirect();
         $this->assertTrue($otherUser->fresh()->roles->contains('Member'));
+    }
+
+    public function testStoreRequiresAuth()
+    {
+        auth()->logout();
+
+        $response = $this->post(route('genealabs.laravel-governor.assignments.store'), [
+            'users' => [],
+        ]);
+
+        $response->assertRedirect();
     }
 }

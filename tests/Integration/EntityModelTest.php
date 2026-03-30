@@ -18,8 +18,9 @@ class EntityModelTest extends UnitTestCase
 
         $groupName = 'TestGroup' . uniqid();
         $group = Group::create(['name' => $groupName]);
-        $entity->update(['group_name' => $groupName]);
 
+        $entity->group_name = $groupName;
+        $entity->save();
         $entity->refresh();
 
         $this->assertNotNull($entity->group);

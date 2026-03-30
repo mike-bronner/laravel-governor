@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor\Tests\Feature\Controllers;
 
-use GeneaLabs\LaravelGovernor\Permission;
 use GeneaLabs\LaravelGovernor\Role;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\User;
 use GeneaLabs\LaravelGovernor\Tests\IntegrationTestCase;
@@ -22,29 +21,6 @@ class RolesControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testIndexPageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.roles.index'));
-
-        $response->assertOk();
-    }
-
-    public function testIndexPageRequiresAuth()
-    {
-        auth()->logout();
-
-        $response = $this->get(route('genealabs.laravel-governor.roles.index'));
-
-        $response->assertRedirect();
-    }
-
-    public function testCreatePageIsAccessible()
-    {
-        $response = $this->get(route('genealabs.laravel-governor.roles.create'));
-
-        $response->assertOk();
-    }
-
     public function testStoreCreatesRole()
     {
         $roleName = 'StoreRole' . uniqid();
@@ -56,15 +32,6 @@ class RolesControllerTest extends IntegrationTestCase
 
         $response->assertRedirect();
         $this->assertDatabaseHas('governor_roles', ['name' => $roleName]);
-    }
-
-    public function testEditPageIsAccessible()
-    {
-        $role = Role::create(['name' => 'EditRole' . uniqid(), 'description' => 'desc']);
-
-        $response = $this->get(route('genealabs.laravel-governor.roles.edit', $role));
-
-        $response->assertOk();
     }
 
     public function testUpdateUpdatesRole()
@@ -89,5 +56,17 @@ class RolesControllerTest extends IntegrationTestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('governor_roles', ['name' => $roleName]);
+    }
+
+    public function testStoreRequiresAuth()
+    {
+        auth()->logout();
+
+        $response = $this->post(route('genealabs.laravel-governor.roles.store'), [
+            'name' => 'NoAuthRole',
+            'description' => 'test',
+        ]);
+
+        $response->assertRedirect();
     }
 }

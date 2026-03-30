@@ -12,7 +12,7 @@ class Setup extends Command
         {--superadmin= : Email address of the user to assign as SuperAdmin}
         {--user= : ID of the user to assign as SuperAdmin}';
 
-    protected $description = 'Set up Governor roles and assign a SuperAdmin user.';
+    protected $description = 'Set up Governor roles and assign a SuperAdmin user. Provide either --superadmin=<email> or --user=<id> to identify the user.';
 
     public function handle(): int
     {
@@ -51,8 +51,8 @@ class Setup extends Command
             }
         }
 
-        $roleClass = config('genealabs-laravel-governor.models.role');
-        $superAdminRole = (new $roleClass)->find('SuperAdmin');
+        $roleModel = app()->make(config('genealabs-laravel-governor.models.role'));
+        $superAdminRole = $roleModel->find('SuperAdmin');
 
         if (! $superAdminRole) {
             $this->error('SuperAdmin role not found. Please run the Governor database seeder first.');
@@ -60,7 +60,7 @@ class Setup extends Command
             return self::FAILURE;
         }
 
-        $memberRole = (new $roleClass)->find('Member');
+        $memberRole = $roleModel->find('Member');
         $rolesToSync = ['SuperAdmin'];
 
         if ($memberRole) {

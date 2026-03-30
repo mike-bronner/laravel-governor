@@ -40,8 +40,7 @@ class GoverningTeamSwitcherTest extends UnitTestCase
 
     public function testCurrentTeamRelationshipReturnsTeam(): void
     {
-        $this->user->update(['current_team_id' => $this->teamA->id]);
-        $this->user->refresh();
+        $this->user->switchTeam($this->teamA->id);
 
         $this->assertNotNull($this->user->currentTeam);
         $this->assertEquals($this->teamA->id, $this->user->currentTeam->id);

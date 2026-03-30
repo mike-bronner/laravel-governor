@@ -46,7 +46,8 @@ trait Governing
 
     public function switchTeam(int $teamId): void
     {
-        $this->update(['current_team_id' => $teamId]);
+        $this->current_team_id = $teamId;
+        $this->save();
         $this->load('currentTeam');
     }
 

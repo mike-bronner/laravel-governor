@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor;
 
+use GeneaLabs\LaravelGovernor\Relations\TeamMembersRelation;
 use GeneaLabs\LaravelGovernor\Traits\Governable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Team extends Model
 {
     use Governable;
@@ -48,11 +51,51 @@ class Team extends Model
         );
     }
 
+    protected function newBelongsToMany(
+        Builder $query,
+        Model $parent,
+        $table,
+        $foreignPivotKey,
+        $relatedPivotKey,
+        $parentKey,
+        $relatedKey,
+        $relationName = null,
+    ): BelongsToMany {
+        if ($table === 'governor_team_user') {
+            return new TeamMembersRelation(
+                $query,
+                $parent,
+                $table,
+                $foreignPivotKey,
+                $relatedPivotKey,
+                $parentKey,
+                $relatedKey,
+                $relationName,
+            );
+        }
+
+        return parent::newBelongsToMany(
+            $query,
+            $parent,
+            $table,
+            $foreignPivotKey,
+            $relatedPivotKey,
+            $parentKey,
+            $relatedKey,
+            $relationName,
+        );
+    }
+
     public function permissions(): HasMany
     {
         return $this->hasMany(
             config('genealabs-laravel-governor.models.permission')
         );
+    }
+
+    public function removeMember(Model $user): void
+    {
+        $this->members()->detach($user);
     }
 
     public function getOwnerNameAttribute(): string

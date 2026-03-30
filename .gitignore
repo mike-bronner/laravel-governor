@@ -9,3 +9,4 @@ phpunit.xml
 .phpunit.result.cache
 .DS_Store
 Thumbs.db
+coverage/

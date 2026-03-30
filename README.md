@@ -1,6 +1,6 @@
 # Governor For Laravel
-[![Build Status](https://travis-ci.org/GeneaLabs/laravel-governor.svg?branch=master)](https://travis-ci.org/GeneaLabs/laravel-governor)
-[![Coverage Status](https://coveralls.io/repos/github/GeneaLabs/laravel-governor/badge.svg?branch=master)](https://coveralls.io/github/GeneaLabs/laravel-governor?branch=master)
+[![Tests](https://github.com/mikebronner/laravel-governor/actions/workflows/tests.yml/badge.svg)](https://github.com/mikebronner/laravel-governor/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/mikebronner/laravel-governor/branch/master/graph/badge.svg)](https://codecov.io/gh/mikebronner/laravel-governor)
 [![Latest StableVersion](https://poser.pugx.org/genealabs/laravel-governor/v/stable.png)](https://packagist.org/packages/genealabs/laravel-governor)
 [![Total Downloads](https://poser.pugx.org/genealabs/laravel-governor/downloads.png)](https://packagist.org/packages/genealabs/laravel-governor)
 

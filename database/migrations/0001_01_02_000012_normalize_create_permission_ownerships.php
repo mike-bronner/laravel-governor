@@ -29,9 +29,4 @@ return new class extends Migration
             ->whereNotIn('ownership_name', ['no', 'any'])
             ->update(['ownership_name' => 'any']);
     }
-
-    public function down(): void
-    {
-        // Cannot reverse: original ownership values are unknown
-    }
 };

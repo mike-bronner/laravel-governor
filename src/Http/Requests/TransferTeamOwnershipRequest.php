@@ -31,6 +31,8 @@ class TransferTeamOwnershipRequest extends Request
                         return;
                     }
 
+                    $this->team->loadMissing('members');
+
                     if (! $this->team->members->contains($user->getKey())) {
                         $fail("The new owner must be an existing member of the team.");
                     }

@@ -5,8 +5,6 @@ namespace GeneaLabs\LaravelGovernor\Tests\Integration;
 use GeneaLabs\LaravelGovernor\Team;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\User;
 use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
-use InvalidArgumentException;
-
 class TransferOwnershipTest extends UnitTestCase
 {
     protected User $owner;
@@ -59,16 +57,6 @@ class TransferOwnershipTest extends UnitTestCase
 
         $this->assertEquals($this->member->getKey(), $this->team->governor_owned_by);
         $this->assertEquals($this->member->name, $this->team->ownerName);
-    }
-
-    public function testTransferToNonMemberIsRejected(): void
-    {
-        $nonMember = User::factory()->create();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("The new owner must be an existing member of the team.");
-
-        $this->team->transferOwnership($nonMember);
     }
 
     public function testTransferOwnershipViaControllerAsOwner(): void

@@ -44,7 +44,7 @@ class Service extends AggregateServiceProvider
                 $entityClass = app(config('genealabs-laravel-governor.models.entity'));
 
                 return (new $entityClass)
-                    ->select("name")
+                    ->select("name", "policy_class")
                     ->with("group:name")
                     ->orderBy("name")
                     ->toBase()

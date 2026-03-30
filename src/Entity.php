@@ -17,6 +17,7 @@ class Entity extends Model
     ];
     protected $fillable = [
         'name',
+        'policy_class',
     ];
     protected $table = "governor_entities";
 

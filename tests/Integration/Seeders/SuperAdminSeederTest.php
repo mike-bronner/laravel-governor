@@ -1,19 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GeneaLabs\LaravelGovernor\Tests\Integration\Seeders;
 
 use GeneaLabs\LaravelGovernor\Database\Seeders\LaravelGovernorSuperAdminSeeder;
 use GeneaLabs\LaravelGovernor\Tests\CreatesApplication;
 use Illuminate\Support\Facades\Log;
 use Orchestra\Testbench\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 
 class SuperAdminSeederTest extends TestCase
 {
     use CreatesApplication;
 
-    #[Test]
-    public function it_skips_when_superadmins_config_is_null(): void
+    public function testSkipsWhenSuperadminsConfigIsNull(): void
     {
         config()->set('genealabs-laravel-governor.superadmins', null);
 
@@ -22,11 +22,11 @@ class SuperAdminSeederTest extends TestCase
         $seeder = new LaravelGovernorSuperAdminSeeder();
         $seeder->run();
 
-        $this->assertTrue(true);
+        $userModel = config('genealabs-laravel-governor.models.auth');
+        $this->assertCount(0, (new $userModel)->where('email', 'like', '%super%example%')->get());
     }
 
-    #[Test]
-    public function it_skips_when_superadmins_config_is_not_valid_json_array(): void
+    public function testSkipsWhenSuperadminsConfigIsNotValidJsonArray(): void
     {
         config()->set('genealabs-laravel-governor.superadmins', 'not-json');
 
@@ -35,11 +35,11 @@ class SuperAdminSeederTest extends TestCase
         $seeder = new LaravelGovernorSuperAdminSeeder();
         $seeder->run();
 
-        $this->assertTrue(true);
+        $userModel = config('genealabs-laravel-governor.models.auth');
+        $this->assertCount(0, (new $userModel)->where('email', 'like', '%super%example%')->get());
     }
 
-    #[Test]
-    public function it_skips_and_warns_when_roles_do_not_exist(): void
+    public function testSkipsAndWarnsWhenRolesDoNotExist(): void
     {
         config()->set('genealabs-laravel-governor.superadmins', json_encode([
             ['name' => 'Test', 'email' => 'test@example.com', 'password' => 'secret'],
@@ -59,8 +59,7 @@ class SuperAdminSeederTest extends TestCase
         $this->assertNull((new $userModel)->where('email', 'test@example.com')->first());
     }
 
-    #[Test]
-    public function it_creates_superadmin_user_when_roles_exist(): void
+    public function testCreatesSuperadminUserWhenRolesExist(): void
     {
         config()->set('genealabs-laravel-governor.superadmins', json_encode([
             ['name' => 'Super User', 'email' => 'super@example.com', 'password' => 'secret123'],

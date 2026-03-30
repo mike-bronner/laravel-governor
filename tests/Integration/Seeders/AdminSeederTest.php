@@ -1,19 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GeneaLabs\LaravelGovernor\Tests\Integration\Seeders;
 
 use GeneaLabs\LaravelGovernor\Database\Seeders\LaravelGovernorAdminSeeder;
 use GeneaLabs\LaravelGovernor\Tests\CreatesApplication;
 use Illuminate\Support\Facades\Log;
 use Orchestra\Testbench\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 
 class AdminSeederTest extends TestCase
 {
     use CreatesApplication;
 
-    #[Test]
-    public function it_skips_when_admins_config_is_null(): void
+    public function testSkipsWhenAdminsConfigIsNull(): void
     {
         config()->set('genealabs-laravel-governor.admins', null);
 
@@ -22,11 +22,11 @@ class AdminSeederTest extends TestCase
         $seeder = new LaravelGovernorAdminSeeder();
         $seeder->run();
 
-        $this->assertTrue(true);
+        $userModel = config('genealabs-laravel-governor.models.auth');
+        $this->assertCount(0, (new $userModel)->where('email', 'like', '%admin%example%')->get());
     }
 
-    #[Test]
-    public function it_skips_when_admins_config_is_not_valid_json_array(): void
+    public function testSkipsWhenAdminsConfigIsNotValidJsonArray(): void
     {
         config()->set('genealabs-laravel-governor.admins', 'not-json');
 
@@ -35,11 +35,11 @@ class AdminSeederTest extends TestCase
         $seeder = new LaravelGovernorAdminSeeder();
         $seeder->run();
 
-        $this->assertTrue(true);
+        $userModel = config('genealabs-laravel-governor.models.auth');
+        $this->assertCount(0, (new $userModel)->where('email', 'like', '%admin%example%')->get());
     }
 
-    #[Test]
-    public function it_skips_and_warns_when_roles_do_not_exist(): void
+    public function testSkipsAndWarnsWhenRolesDoNotExist(): void
     {
         config()->set('genealabs-laravel-governor.admins', json_encode([
             ['name' => 'Test Admin', 'email' => 'admin-test@example.com', 'password' => 'secret'],
@@ -59,8 +59,7 @@ class AdminSeederTest extends TestCase
         $this->assertNull((new $userModel)->where('email', 'admin-test@example.com')->first());
     }
 
-    #[Test]
-    public function it_creates_admin_user_when_roles_exist(): void
+    public function testCreatesAdminUserWhenRolesExist(): void
     {
         config()->set('genealabs-laravel-governor.admins', json_encode([
             ['name' => 'Admin User', 'email' => 'admin@example.com', 'password' => 'secret123'],

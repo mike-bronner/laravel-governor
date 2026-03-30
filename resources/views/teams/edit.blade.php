@@ -372,14 +372,14 @@
                                                 <td
                                                     class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                                                 >
-                                                    {{ $entity }}
+                                                    {{ config('genealabs-laravel-governor.entity-aliases')[$entity] ?? $entity }}
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <x-form-select
                                                         name="permissions[{{ urlencode($group) }}][{{ urlencode($entity) }}][create]"
                                                         label=""
                                                         class="form-select text-sm rounded-md border-gray-300"
-                                                        :options="$ownerships"
+                                                        :options="$ownerships->except(['own', 'other'])"
                                                         :selectedValues="collect($permission['create'])"
                                                     />
                                                 </td>

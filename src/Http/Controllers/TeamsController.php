@@ -3,6 +3,7 @@
 namespace GeneaLabs\LaravelGovernor\Http\Controllers;
 
 use GeneaLabs\LaravelGovernor\Http\Requests\TeamStoreRequest;
+use GeneaLabs\LaravelGovernor\Http\Requests\TransferTeamOwnershipRequest;
 use GeneaLabs\LaravelGovernor\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -78,6 +79,13 @@ class TeamsController extends Controller
                 "permissionMatrix" => $permissionMatrix,
                 "team" => $team,
             ]);
+    }
+
+    public function transferOwnership(TransferTeamOwnershipRequest $request, Team $team): RedirectResponse
+    {
+        $request->process();
+
+        return redirect()->route('genealabs.laravel-governor.teams.index');
     }
 
     protected function createPermissionMatrix(Team $team, Collection $entities): array

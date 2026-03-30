@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor\Providers;
 
+use GeneaLabs\LaravelGovernor\Action;
 use GeneaLabs\LaravelGovernor\Console\Commands\Publish;
 use GeneaLabs\LaravelGovernor\Console\Commands\Setup;
+use GeneaLabs\LaravelGovernor\Entity;
+use GeneaLabs\LaravelGovernor\GovernorCache;
 use GeneaLabs\LaravelGovernor\Http\Middleware\ParseCustomPolicyActions;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedInvitationListener;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedListener;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedTeamListener;
 use GeneaLabs\LaravelGovernor\Listeners\CreatingInvitationListener;
 use GeneaLabs\LaravelGovernor\Listeners\CreatingListener;
+use GeneaLabs\LaravelGovernor\Observers\LookupTableObserver;
+use GeneaLabs\LaravelGovernor\Ownership;
+use GeneaLabs\LaravelGovernor\Permission;
+use GeneaLabs\LaravelGovernor\Role;
 use GeneaLabs\LaravelGovernor\View\Components\MenuBar;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\AggregateServiceProvider;
@@ -27,46 +34,57 @@ class Service extends AggregateServiceProvider
 
         $this->mergeConfigFrom(__DIR__ . '/../../config/config.php', 'genealabs-laravel-governor');
         $this->commands(Publish::class, Setup::class);
+        $this->app->singleton(GovernorCache::class);
     }
 
     public function boot(): void
     {
-        $this->app
-            ->singleton('governor-actions', function () {
-                $actionClass = app(config('genealabs-laravel-governor.models.action'));
+        $cache = $this->app->make(GovernorCache::class);
 
-                return (new $actionClass)
-                    ->orderBy("name")
-                    ->get();
+        $this->app
+            ->singleton('governor-actions', function () use ($cache) {
+                return $cache->remember('actions', function () {
+                    $actionClass = app(config('genealabs-laravel-governor.models.action'));
+
+                    return (new $actionClass)
+                        ->orderBy("name")
+                        ->get();
+                });
             });
         $this->app
-            ->singleton('governor-entities', function () {
-                $entityClass = app(config('genealabs-laravel-governor.models.entity'));
+            ->singleton('governor-entities', function () use ($cache) {
+                return $cache->remember('entities', function () {
+                    $entityClass = app(config('genealabs-laravel-governor.models.entity'));
 
-                return (new $entityClass)
-                    ->select("name", "policy_class")
-                    ->with("group:name")
-                    ->orderBy("name")
-                    ->toBase()
-                    ->get();
+                    return (new $entityClass)
+                        ->select("name", "policy_class")
+                        ->with("group:name")
+                        ->orderBy("name")
+                        ->toBase()
+                        ->get();
+                });
             });
         $this->app
-            ->singleton("governor-permissions", function () {
-                $permissionClass = config("genealabs-laravel-governor.models.permission");
+            ->singleton("governor-permissions", function () use ($cache) {
+                return $cache->remember('permissions', function () {
+                    $permissionClass = config("genealabs-laravel-governor.models.permission");
 
-                return (new $permissionClass)
-                    ->with("role", "team")
-                    ->toBase()
-                    ->get();
+                    return (new $permissionClass)
+                        ->with("role", "team")
+                        ->toBase()
+                        ->get();
+                });
             });
         $this->app
-            ->singleton("governor-roles", function () {
-                $roleClass = config("genealabs-laravel-governor.models.role");
+            ->singleton("governor-roles", function () use ($cache) {
+                return $cache->remember('roles', function () {
+                    $roleClass = config("genealabs-laravel-governor.models.role");
 
-                return (new $roleClass)
-                    ->select('name')
-                    ->toBase()
-                    ->get();
+                    return (new $roleClass)
+                        ->select('name')
+                        ->toBase()
+                        ->get();
+                });
             });
 
         $teamClass = config("genealabs-laravel-governor.models.team");
@@ -95,9 +113,28 @@ class Service extends AggregateServiceProvider
         ]);
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
+        $this->registerLookupTableObservers();
+
         $this->app
             ->make(Kernel::class)
             ->pushMiddleware(ParseCustomPolicyActions::class);
+    }
+
+    protected function registerLookupTableObservers(): void
+    {
+        $observer = $this->app->make(LookupTableObserver::class);
+
+        $models = [
+            config('genealabs-laravel-governor.models.action', Action::class),
+            config('genealabs-laravel-governor.models.entity', Entity::class),
+            config('genealabs-laravel-governor.models.ownership', Ownership::class),
+            config('genealabs-laravel-governor.models.permission', Permission::class),
+            config('genealabs-laravel-governor.models.role', Role::class),
+        ];
+
+        foreach ($models as $model) {
+            $model::observe($observer);
+        }
     }
 
     public function provides(): array

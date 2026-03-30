@@ -99,4 +99,24 @@ return [
     */
     'entity-aliases' => [],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Lookup Table Cache
+    |--------------------------------------------------------------------------
+    |
+    | Governor can cache lookup table queries (roles, actions, entities,
+    | ownerships, permissions) across requests to reduce database load.
+    | When enabled, results are stored in your configured cache driver
+    | with the specified TTL. Cache is automatically invalidated when
+    | any lookup table is modified.
+    |
+    | Set 'enabled' to true to activate cross-request caching.
+    | Set 'ttl' to the number of seconds cached data should persist.
+    | Set to null for "forever" (until manually invalidated).
+    */
+    'cache' => [
+        'enabled' => false,
+        'ttl' => 3600,
+    ],
+
 ];

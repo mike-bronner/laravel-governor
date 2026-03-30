@@ -112,4 +112,48 @@ class TeamMemberRemovalTest extends UnitTestCase
             $this->team->members()->where('user_id', $this->member->getKey())->exists()
         );
     }
+
+    public function testSyncCannotRemoveOwner(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The team owner cannot be removed from their own team.');
+
+        // Sync with only the non-owner member — would remove the owner
+        $this->team->members()->sync([$this->member->getKey()]);
+    }
+
+    public function testSyncKeepsOwnerWhenIncluded(): void
+    {
+        $thirdUser = User::factory()->create();
+
+        $this->team->members()->sync([
+            $this->owner->getKey(),
+            $thirdUser->getKey(),
+        ]);
+
+        $this->team->load('members');
+
+        $this->assertTrue($this->team->members->contains($this->owner));
+        $this->assertTrue($this->team->members->contains($thirdUser));
+        $this->assertFalse($this->team->members->contains($this->member));
+    }
+
+    public function testToggleCannotRemoveOwner(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The team owner cannot be removed from their own team.');
+
+        // Toggle the owner — would detach them since they're already attached
+        $this->team->members()->toggle([$this->owner->getKey()]);
+    }
+
+    public function testToggleCanRemoveNonOwner(): void
+    {
+        $this->assertTrue($this->team->members->contains($this->member));
+
+        $this->team->members()->toggle([$this->member->getKey()]);
+        $this->team->load('members');
+
+        $this->assertFalse($this->team->members->contains($this->member));
+    }
 }

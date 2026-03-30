@@ -12,7 +12,11 @@ class TeamMembersRelation extends BelongsToMany
     public function detach($ids = null, $touch = true)
     {
         $team = $this->getParent();
-        $ownerId = $team->governor_owned_by;
+        $ownerId = (int) $team->governor_owned_by;
+
+        if ($ownerId === 0) {
+            return parent::detach($ids, $touch);
+        }
 
         if ($ids === null) {
             if ($this->newPivotQuery()->where('user_id', $ownerId)->exists()) {
@@ -24,7 +28,7 @@ class TeamMembersRelation extends BelongsToMany
             $ids = $this->parseIds($ids);
 
             foreach ($ids as $id) {
-                if ($id == $ownerId) {
+                if ((int) $id === $ownerId) {
                     throw new LogicException(
                         "The team owner cannot be removed from their own team."
                     );

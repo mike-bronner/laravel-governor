@@ -1,5 +1,6 @@
 <?php namespace GeneaLabs\LaravelGovernor\Listeners;
 
+use GeneaLabs\LaravelGovernor\GovernorCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -32,6 +33,8 @@ class CreatedListener
                     ]);
                     $model->roles()->attach('Member');
                 }
+
+                GovernorCache::flushRoles();
             });
     }
 }

@@ -6,6 +6,7 @@ namespace GeneaLabs\LaravelGovernor\Providers;
 
 use GeneaLabs\LaravelGovernor\Console\Commands\Publish;
 use GeneaLabs\LaravelGovernor\Console\Commands\Setup;
+use GeneaLabs\LaravelGovernor\GovernorCache;
 use GeneaLabs\LaravelGovernor\Http\Middleware\ParseCustomPolicyActions;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedInvitationListener;
 use GeneaLabs\LaravelGovernor\Listeners\CreatedListener;
@@ -33,40 +34,19 @@ class Service extends AggregateServiceProvider
     {
         $this->app
             ->singleton('governor-actions', function () {
-                $actionClass = app(config('genealabs-laravel-governor.models.action'));
-
-                return (new $actionClass)
-                    ->orderBy("name")
-                    ->get();
+                return GovernorCache::actions();
             });
         $this->app
             ->singleton('governor-entities', function () {
-                $entityClass = app(config('genealabs-laravel-governor.models.entity'));
-
-                return (new $entityClass)
-                    ->select("name", "policy_class")
-                    ->with("group:name")
-                    ->orderBy("name")
-                    ->toBase()
-                    ->get();
+                return GovernorCache::entities();
             });
         $this->app
             ->singleton("governor-permissions", function () {
-                $permissionClass = config("genealabs-laravel-governor.models.permission");
-
-                return (new $permissionClass)
-                    ->with("role", "team")
-                    ->toBase()
-                    ->get();
+                return GovernorCache::permissions();
             });
         $this->app
             ->singleton("governor-roles", function () {
-                $roleClass = config("genealabs-laravel-governor.models.role");
-
-                return (new $roleClass)
-                    ->select('name')
-                    ->toBase()
-                    ->get();
+                return GovernorCache::roles();
             });
 
         $teamClass = config("genealabs-laravel-governor.models.team");

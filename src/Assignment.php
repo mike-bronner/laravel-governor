@@ -6,6 +6,7 @@ namespace GeneaLabs\LaravelGovernor;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use GeneaLabs\LaravelGovernor\GovernorCache;
 
 class Assignment extends Model
 {
@@ -41,6 +42,8 @@ class Assignment extends Model
                     $user->roles()->attach('Member');
                 }
             });
+
+        GovernorCache::flushRoles();
     }
 
     public function removeAllSuperAdminUsersFromOtherRoles($assignedUsers)
@@ -63,6 +66,8 @@ class Assignment extends Model
                 ->find($role)
                 ->users()
                 ->attach($users);
+
+            GovernorCache::flushRoles();
         }
     }
 
@@ -79,6 +84,8 @@ class Assignment extends Model
                 ->users()
                 ->attach($users);
         }
+
+        GovernorCache::flushRoles();
     }
 
     public function removeUsersFromRoles($assignedUsers)
@@ -91,6 +98,8 @@ class Assignment extends Model
                     ->whereIn("id", data_get($assignedUsers, $role->name, []))
                     ->detach();
             });
+
+        GovernorCache::flushRoles();
     }
 
 

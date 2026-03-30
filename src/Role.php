@@ -10,6 +10,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
+    public static function boot(): void
+    {
+        parent::boot();
+
+        static::saved(function () {
+            GovernorCache::flushRoles();
+        });
+
+        static::deleted(function () {
+            GovernorCache::flushRoles();
+        });
+    }
+
     protected $keyType = 'string';
     protected $primaryKey = 'name';
     protected $rules = [

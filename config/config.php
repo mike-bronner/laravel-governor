@@ -99,4 +99,16 @@ return [
     */
     'entity-aliases' => [],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cache TTL (seconds)
+    |--------------------------------------------------------------------------
+    |
+    | How long to cache roles, permissions, and other Governor lookups.
+    | Set to 0 to disable caching entirely (lookups will hit the database
+    | each time the singleton is resolved). Cache is automatically
+    | invalidated when roles or permissions are created, updated, or deleted.
+    */
+    'cache-ttl' => 300,
+
 ];

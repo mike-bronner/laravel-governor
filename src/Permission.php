@@ -26,12 +26,7 @@ class Permission extends Model
 
     protected static function syncPermissionsSingleton(): void
     {
-        $permissionClass = config("genealabs-laravel-governor.models.permission");
-        $permissions = (new $permissionClass)
-            ->with("role", "team")
-            ->toBase()
-            ->get();
-        app()->instance("governor-permissions", $permissions);
+        GovernorCache::flushPermissions();
     }
 
     public static function boot(): void

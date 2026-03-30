@@ -20,13 +20,6 @@ jobs:
             laravel: '11.*'
           - php: '8.2'
             laravel: '13.*'
-        include:
-          - laravel: '11.*'
-            testbench: '9.*'
-          - laravel: '12.*'
-            testbench: '10.*'
-          - laravel: '13.*'
-            testbench: '11.*'
 
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
 
@@ -39,12 +32,20 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, pdo, pdo_sqlite
-          coverage: none
+          coverage: xdebug
 
       - name: Install dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
-      - name: Run tests
-        run: vendor/bin/phpunit
+      - name: Run tests with coverage
+        run: XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover coverage.xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.php == '8.4' && matrix.laravel == '12.*'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          fail_ci_if_error: true

@@ -47,7 +47,6 @@
         "laravel": {
             "providers": [
                 "GeneaLabs\\LaravelGovernor\\Providers\\Auth",
-                "GeneaLabs\\LaravelGovernor\\Providers\\Nova",
                 "GeneaLabs\\LaravelGovernor\\Providers\\Route",
                 "GeneaLabs\\LaravelGovernor\\Providers\\Service"
             ]

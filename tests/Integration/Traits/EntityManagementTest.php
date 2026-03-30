@@ -10,13 +10,21 @@ use GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\ArticlePolicy;
 use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
 use GeneaLabs\LaravelGovernor\Traits\EntityManagement;
 use Illuminate\Support\Collection;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Support\Facades\Gate;
 
 class EntityManagementTest extends UnitTestCase
 {
     use EntityManagement;
 
-    public function test_get_policies_returns_manually_registered_policies(): void
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        cache()->forget("genealabs:laravel-governor:policies");
+    }
+
+    public function testGetPoliciesReturnsManuallyRegisteredPolicies(): void
     {
         $policies = $this->getPolicies();
 
@@ -27,9 +35,9 @@ class EntityManagementTest extends UnitTestCase
         );
     }
 
-    public function test_get_policies_returns_auto_discovered_policies(): void
+    public function testGetPoliciesReturnsAutoDiscoveredPolicies(): void
     {
-        $gate = app(Gate::class);
+        $gate = app(GateContract::class);
 
         // Verify ArticlePolicy is NOT manually registered
         $registeredPolicies = $gate->policies();
@@ -52,7 +60,7 @@ class EntityManagementTest extends UnitTestCase
         );
     }
 
-    public function test_manually_and_auto_discovered_policies_coexist(): void
+    public function testManuallyAndAutoDiscoveredPoliciesCoexist(): void
     {
         config()->set('genealabs-laravel-governor.policy_paths', [
             __DIR__ . '/../../Fixtures/Policies',
@@ -60,20 +68,18 @@ class EntityManagementTest extends UnitTestCase
 
         $policies = $this->getPolicies();
 
-        // Manually registered
         $this->assertTrue(
             $policies->contains('GeneaLabs\LaravelGovernor\Tests\Fixtures\Policies\Author'),
             'Manually registered Author policy should still be present',
         );
 
-        // Auto-discovered
         $this->assertTrue(
             $policies->contains(ArticlePolicy::class),
             'Auto-discovered ArticlePolicy should also be present',
         );
     }
 
-    public function test_parse_policies_creates_entities_for_auto_discovered_policies(): void
+    public function testParsePoliciesCreatesEntitiesForAutoDiscoveredPolicies(): void
     {
         config()->set('genealabs-laravel-governor.policy_paths', [
             __DIR__ . '/../../Fixtures/Policies',
@@ -81,13 +87,11 @@ class EntityManagementTest extends UnitTestCase
 
         $policies = $this->getPolicies();
 
-        // Check auto-discovered ArticlePolicy is in the collection
         $this->assertTrue(
             $policies->contains(ArticlePolicy::class),
             'ArticlePolicy should be in discovered policies',
         );
 
-        // Manually call getEntity to verify it creates the database record
         $entityName = $this->getEntity(ArticlePolicy::class);
         $this->assertStringContainsString(
             'Article',
@@ -95,7 +99,6 @@ class EntityManagementTest extends UnitTestCase
             'Entity name should contain Article',
         );
 
-        // Verify entity was created in database
         $entityClass = config('genealabs-laravel-governor.models.entity');
         $entity = (new $entityClass())
             ->where('name', 'like', '%Article%')
@@ -107,7 +110,7 @@ class EntityManagementTest extends UnitTestCase
         );
     }
 
-    public function test_get_entity_from_model_works_for_auto_discovered_policy(): void
+    public function testGetEntityFromModelWorksForAutoDiscoveredPolicy(): void
     {
         $entityName = $this->getEntityFromModel(Article::class);
 
@@ -117,21 +120,21 @@ class EntityManagementTest extends UnitTestCase
         );
     }
 
-    public function testGetEntityReturnsEmptyStringForPolicyWithoutPackageName()
+    public function testGetEntityReturnsEmptyStringForPolicyWithoutPackageName(): void
     {
         $result = $this->getEntity('SomePolicy');
 
         $this->assertSame('', $result);
     }
 
-    public function testGetEntityReturnsEmptyStringForSingleSegmentNamespace()
+    public function testGetEntityReturnsEmptyStringForSingleSegmentNamespace(): void
     {
         $result = $this->getEntity('OrphanPolicy');
 
         $this->assertSame('', $result);
     }
 
-    public function testGetEntityReturnsValidEntityForAppNamespace()
+    public function testGetEntityReturnsValidEntityForAppNamespace(): void
     {
         $result = $this->getEntity('App\\Policies\\PostPolicy');
 
@@ -139,7 +142,7 @@ class EntityManagementTest extends UnitTestCase
         $this->assertSame('Post', $result);
     }
 
-    public function testGetEntityReturnsValidEntityForPackageNamespace()
+    public function testGetEntityReturnsValidEntityForPackageNamespace(): void
     {
         $result = $this->getEntity('Vendor\\PackageName\\Policies\\WidgetPolicy');
 
@@ -147,7 +150,7 @@ class EntityManagementTest extends UnitTestCase
         $this->assertSame('Widget (Package Name)', $result);
     }
 
-    public function testGetEntityDoesNotCreateEntityWithEmptyPackageName()
+    public function testGetEntityDoesNotCreateEntityWithEmptyPackageName(): void
     {
         $entityClass = config('genealabs-laravel-governor.models.entity');
 
@@ -160,7 +163,7 @@ class EntityManagementTest extends UnitTestCase
         $this->assertSame($countBefore, $countAfter);
     }
 
-    public function testParsePoliciesSkipsPolicesWithoutValidPackageName()
+    public function testParsePoliciesSkipsPolicesWithoutValidPackageName(): void
     {
         Gate::policy('SomeModel', 'BadPolicy');
 
@@ -171,26 +174,53 @@ class EntityManagementTest extends UnitTestCase
 
         $countAfter = (new $entityClass)->count();
 
-        // Should not have added an entity with empty package name
         $entities = (new $entityClass)->pluck('name')->toArray();
         foreach ($entities as $name) {
             $this->assertStringNotContainsString('()', $name, 'Entity should not have empty package name parentheses');
         }
     }
 
-    public function testGetEntityFromModelReturnsEmptyStringWhenNoPolicyExists()
+    public function testGetEntityFromModelReturnsEmptyStringWhenNoPolicyExists(): void
     {
         $result = $this->getEntityFromModel('NonExistent\\Model');
 
         $this->assertSame('', $result);
     }
 
-    public function testValidAutoDiscoveredEntitiesStillAppear()
+    public function testValidAutoDiscoveredEntitiesStillAppear(): void
     {
-        // Governor's own policies have proper namespaces
         $result = $this->getEntity('GeneaLabs\\LaravelGovernor\\Policies\\Entity');
 
         $this->assertNotEmpty($result);
         $this->assertStringContainsString('Laravel Governor', $result);
+    }
+
+    public function testResolveClassNameFromFileUsesTokenizer(): void
+    {
+        $filePath = __DIR__ . '/../../Fixtures/Policies/ArticlePolicy.php';
+
+        $result = $this->resolveClassNameFromFile($filePath);
+
+        $this->assertSame(ArticlePolicy::class, $result);
+    }
+
+    public function testResolveClassNameFromFileReturnsNullForInvalidFile(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'test');
+        file_put_contents($tmpFile, '<?php echo "no class here";');
+
+        $result = $this->resolveClassNameFromFile($tmpFile);
+
+        $this->assertNull($result);
+        unlink($tmpFile);
+    }
+
+    public function testGetPoliciesResultIsCached(): void
+    {
+        $first = $this->getPolicies();
+        $second = $this->getPolicies();
+
+        $this->assertEquals($first->toArray(), $second->toArray());
+        $this->assertNotNull(cache()->get("genealabs:laravel-governor:policies"));
     }
 }

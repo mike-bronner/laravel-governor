@@ -60,13 +60,15 @@ trait EntityManagement
 
     protected function getPolicies(): Collection
     {
-        $gate = app(Gate::class);
+        return cache()->remember("genealabs:laravel-governor:policies", 300, function (): Collection {
+            $gate = app(Gate::class);
 
-        $registeredPolicies = collect($gate->policies());
+            $registeredPolicies = collect($gate->policies());
 
-        $autoDiscoveredPolicies = $this->discoverPolicies($gate);
+            $autoDiscoveredPolicies = $this->discoverPolicies($gate);
 
-        return $registeredPolicies->merge($autoDiscoveredPolicies)->unique();
+            return $registeredPolicies->merge($autoDiscoveredPolicies)->unique();
+        });
     }
 
     protected function discoverPolicies(Gate $gate): Collection
@@ -131,15 +133,53 @@ trait EntityManagement
     {
         $contents = file_get_contents($filePath);
 
-        if (! preg_match('/namespace\s+(.+?);/', $contents, $nsMatch)) {
+        if ($contents === false) {
             return null;
         }
 
-        if (! preg_match('/class\s+(\w+)/', $contents, $classMatch)) {
+        $tokens = token_get_all($contents);
+        $namespace = null;
+        $className = null;
+
+        $count = count($tokens);
+
+        for ($i = 0; $i < $count; $i++) {
+            if (! is_array($tokens[$i])) {
+                continue;
+            }
+
+            if ($tokens[$i][0] === T_NAMESPACE) {
+                $namespaceParts = [];
+
+                for ($j = $i + 1; $j < $count; $j++) {
+                    if (is_array($tokens[$j]) && in_array($tokens[$j][0], [T_NAME_QUALIFIED, T_STRING], true)) {
+                        $namespaceParts[] = $tokens[$j][1];
+                    } elseif (! is_array($tokens[$j]) && $tokens[$j] === ';') {
+                        break;
+                    }
+                }
+
+                $namespace = implode('\\', $namespaceParts);
+            }
+
+            if ($tokens[$i][0] === T_CLASS
+                && isset($tokens[$i - 1])
+                && (! is_array($tokens[$i - 1]) || $tokens[$i - 1][0] !== T_DOUBLE_COLON)
+            ) {
+                for ($j = $i + 1; $j < $count; $j++) {
+                    if (is_array($tokens[$j]) && $tokens[$j][0] === T_STRING) {
+                        $className = $tokens[$j][1];
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        if ($namespace === null || $className === null) {
             return null;
         }
 
-        return $nsMatch[1] . '\\' . $classMatch[1];
+        return $namespace . '\\' . $className;
     }
 
     protected function guessModelForPolicy(string $policyClass): ?string
@@ -151,17 +191,61 @@ trait EntityManagement
             return null;
         }
 
-        $policyNamespace = Str::beforeLast($policyClass, '\\');
-        $modelNamespace = Str::replaceLast('\\Policies', '\\Models', $policyNamespace);
+        $candidates = $this->buildModelCandidates($policyClass, $modelName);
 
-        if (class_exists($modelNamespace . '\\' . $modelName)) {
-            return $modelNamespace . '\\' . $modelName;
+        foreach ($candidates as $candidate) {
+            if (class_exists($candidate)) {
+                return $candidate;
+            }
         }
 
-        $appNamespace = Str::replaceLast('\\Policies', '', $policyNamespace);
+        return null;
+    }
 
-        if (class_exists($appNamespace . '\\' . $modelName)) {
-            return $appNamespace . '\\' . $modelName;
+    protected function buildModelCandidates(string $policyClass, string $modelName): array
+    {
+        $policyNamespace = Str::beforeLast($policyClass, '\\');
+        $candidates = [];
+
+        // Standard Laravel: App\Policies\FooPolicy -> App\Models\Foo
+        $modelsNamespace = Str::replaceLast('\\Policies', '\\Models', $policyNamespace);
+        $candidates[] = $modelsNamespace . '\\' . $modelName;
+
+        // Flat app namespace: App\Policies\FooPolicy -> App\Foo
+        $appNamespace = Str::replaceLast('\\Policies', '', $policyNamespace);
+        $candidates[] = $appNamespace . '\\' . $modelName;
+
+        // Package convention: Vendor\Package\Policies\FooPolicy -> Vendor\Package\Foo
+        $candidates[] = $appNamespace . '\\' . $modelName;
+
+        // Composer autoloader: try all registered PSR-4 namespaces
+        $autoloader = $this->getComposerAutoloader();
+
+        if ($autoloader !== null) {
+            foreach ($autoloader->getPrefixesPsr4() as $prefix => $paths) {
+                $candidate = $prefix . 'Models\\' . $modelName;
+
+                if (class_exists($candidate)) {
+                    $candidates[] = $candidate;
+                }
+
+                $candidate = $prefix . $modelName;
+
+                if (class_exists($candidate)) {
+                    $candidates[] = $candidate;
+                }
+            }
+        }
+
+        return array_unique($candidates);
+    }
+
+    protected function getComposerAutoloader(): ?\Composer\Autoload\ClassLoader
+    {
+        foreach (spl_autoload_functions() as $autoloader) {
+            if (is_array($autoloader) && $autoloader[0] instanceof \Composer\Autoload\ClassLoader) {
+                return $autoloader[0];
+            }
         }
 
         return null;

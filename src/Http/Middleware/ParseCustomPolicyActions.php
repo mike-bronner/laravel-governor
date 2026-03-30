@@ -28,7 +28,7 @@ class ParseCustomPolicyActions
     protected function registerCustomPolicyActions(): void
     {
         $this
-            ->getAllPolicies()
+            ->getPolicies()
             ->map(function (string $policyClass, string $modelClass): Collection {
                 if (! collect(class_parents($policyClass))->contains(BasePolicy::class)) {
                     return collect();
@@ -71,13 +71,6 @@ class ParseCustomPolicyActions
             return $methods
                 ->diff($parentMethods)
                 ->sort();
-        });
-    }
-
-    protected function getAllPolicies(): Collection
-    {
-        return cache()->remember("genealabs:laravel-governor:policies", 300, function (): Collection {
-            return $this->getPolicies();
         });
     }
 }

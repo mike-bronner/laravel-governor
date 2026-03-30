@@ -22,7 +22,15 @@ trait EntityManagement
         if (! Str::contains($policyClassName, "App")) {
             $nameSpaceParts->shift();
             $packageName = $nameSpaceParts->shift();
-            $packageName = trim(implode(" ", preg_split('/(?=[A-Z])/', $packageName)));
+
+            if ($packageName) {
+                $packageName = trim(implode(" ", preg_split('/(?=[A-Z])/', $packageName)));
+            }
+
+            if (! $packageName) {
+                return "";
+            }
+
             $entityName .= " ({$packageName})";
         }
 

@@ -96,13 +96,10 @@ class GovernableExtendedTest extends UnitTestCase
         $this->assertTrue($results->isNotEmpty());
     }
 
-    public function testGetOwnershipsForNonExistentEntity()
+    public function testScopeViewableReturnsCollectionWithNoPermissions()
     {
-        // getOwnershipsForEntity is a protected method on Governable trait
-        // Test via public scopeViewable method instead
         $results = Author::viewable()->get();
 
-        // Should work without errors
-        $this->assertTrue(true);
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Collection::class, $results);
     }
 }

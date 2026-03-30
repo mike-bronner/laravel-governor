@@ -13,12 +13,8 @@ class EntityModelTest extends UnitTestCase
 {
     public function testGroupRelationship()
     {
-        // Skip if no entities exist
         $entity = Entity::first();
-        if (!$entity) {
-            $this->assertTrue(true);
-            return;
-        }
+        $this->assertNotNull($entity, 'Expected at least one entity to exist from seeding');
 
         $groupName = 'TestGroup' . uniqid();
         $group = Group::create(['name' => $groupName]);
@@ -26,9 +22,8 @@ class EntityModelTest extends UnitTestCase
 
         $entity->refresh();
 
-        // Entity::group uses belongsTo(group_name), which matches on group_name foreign key
-        // The relationship should work if the group was created
-        $this->assertTrue(true);
+        $this->assertNotNull($entity->group);
+        $this->assertEquals($groupName, $entity->group->name);
     }
 
     public function testPermissionsRelationship()

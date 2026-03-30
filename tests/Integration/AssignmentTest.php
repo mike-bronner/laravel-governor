@@ -31,79 +31,31 @@ class AssignmentTest extends UnitTestCase
 
     public function testCanQueryUserRelationshipDefinition()
     {
-        // Test the relationship definition exists and is correctly configured
         $relation = $this->assignment->user();
         $this->assertNotNull($relation);
     }
 
     public function testCanQueryRoleRelationshipDefinition()
     {
-        // Test the relationship definition exists and is correctly configured
         $relation = $this->assignment->role();
         $this->assertNotNull($relation);
     }
 
-    public function testAddAllUsersToMemberRoleOnEmptyUsers()
+    public function testAssignUsersToRolesAssignsCorrectly()
     {
-        // This method should not throw exception even with no users
-        $this->assignment->addAllUsersToMemberRole();
-        $this->assertTrue(true);
+        $user = User::factory()->create();
+
+        $this->assignment->assignUsersToRoles([
+            'SuperAdmin' => [$user->id],
+        ]);
+
+        $this->assertTrue($user->fresh()->roles->contains('SuperAdmin'));
     }
 
-    public function testRemoveAllSuperAdminUsersFromOtherRolesWithEmptyArray()
+    public function testGetAllUsersOfRoleReturnsCollection()
     {
-        // Should not throw exception with empty array
-        $this->assignment->removeAllSuperAdminUsersFromOtherRoles([]);
-        $this->assertTrue(true);
-    }
+        $users = $this->assignment->getAllUsersOfRole('Member');
 
-    public function testRemoveAllSuperAdminUsersFromOtherRolesWithNoSuperAdminKey()
-    {
-        $assignedUsers = [
-            'Member' => [1, 2],
-            'Editor' => [3],
-        ];
-        
-        // Should not throw exception
-        $this->assignment->removeAllSuperAdminUsersFromOtherRoles($assignedUsers);
-        $this->assertTrue(true);
-    }
-
-    public function testAssignUsersToRolesWithEmptyArray()
-    {
-        // Should handle empty assignments gracefully
-        $this->assignment->assignUsersToRoles([]);
-        $this->assertTrue(true);
-    }
-
-    public function testAssignUsersToRolesSkipsMemberRole()
-    {
-        $assignedUsers = [
-            'Member' => [1, 2], // Should be skipped
-        ];
-        
-        // Should not throw exception and should skip Member role
-        $this->assignment->assignUsersToRoles($assignedUsers);
-        $this->assertTrue(true);
-    }
-
-    public function testRemoveUsersFromRolesWithEmptyArray()
-    {
-        // Should handle empty assignments gracefully
-        $this->assignment->removeUsersFromRoles([]);
-        $this->assertTrue(true);
-    }
-
-    public function testGetAllUsersOfRoleStructure()
-    {
-        // Get users from existing role
-        try {
-            $users = $this->assignment->getAllUsersOfRole('Member');
-            // Should return a collection even if empty
-            $this->assertIsIterable($users);
-        } catch (\Exception $e) {
-            // Role might not exist yet, that's ok
-            $this->assertTrue(true);
-        }
+        $this->assertIsIterable($users);
     }
 }

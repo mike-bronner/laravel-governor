@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor\Tests\Feature\Controllers;
 
-use GeneaLabs\LaravelGovernor\Permission;
 use GeneaLabs\LaravelGovernor\Team;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\User;
 use GeneaLabs\LaravelGovernor\Tests\IntegrationTestCase;
@@ -22,51 +21,50 @@ class TeamsControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testIndexPageWithAuth()
+    public function testIndexPageIsAccessible()
     {
-        // Verify user is authenticated
-        $this->assertTrue(auth()->check());
+        $response = $this->get(route('genealabs.laravel-governor.teams.index'));
+
+        $response->assertOk();
     }
 
-    public function testCreatePageWithAuth()
+    public function testCreatePageIsAccessible()
     {
-        // Verify SuperAdmin can access create
-        $this->assertTrue($this->user->hasRole('SuperAdmin'));
+        $response = $this->get(route('genealabs.laravel-governor.teams.create'));
+
+        $response->assertOk();
     }
 
-    public function testTeamCanBeCreated()
+    public function testStoreCreatesTeam()
     {
-        $teamName = 'New Test Team' . uniqid();
-        $team = Team::create([
+        $teamName = 'StoreTeam' . uniqid();
+
+        $response = $this->post(route('genealabs.laravel-governor.teams.store'), [
             'name' => $teamName,
             'description' => 'A new test team',
         ]);
 
+        $response->assertRedirect();
         $this->assertDatabaseHas('governor_teams', ['name' => $teamName]);
     }
 
-    public function testEditPageRoute()
+    public function testEditPageIsAccessible()
     {
-        // Just verify route exists
-        $this->assertTrue(true);
+        $team = Team::create(['name' => 'EditTeam' . uniqid(), 'description' => 'desc']);
+
+        $response = $this->get(route('genealabs.laravel-governor.teams.edit', $team));
+
+        $response->assertOk();
     }
 
-    public function testTeamCanHavePermissions()
+    public function testDestroyDeletesTeam()
     {
-        $teamName = 'Perm Team' . uniqid();
-        $team = Team::create([
-            'name' => $teamName,
-            'description' => 'A team with permissions',
-        ]);
+        $teamName = 'DelTeam' . uniqid();
+        $team = Team::create(['name' => $teamName, 'description' => 'desc']);
 
-        Permission::create([
-            'entity_name' => 'Author (Laravel Governor)',
-            'action_name' => 'create',
-            'ownership_name' => 'any',
-            'team_id' => $team->id,
-        ]);
+        $response = $this->delete(route('genealabs.laravel-governor.teams.destroy', $team));
 
-        $team->refresh();
-        $this->assertTrue($team->permissions->isNotEmpty());
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('governor_teams', ['name' => $teamName]);
     }
 }

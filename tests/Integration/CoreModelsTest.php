@@ -43,14 +43,6 @@ class CoreModelsTest extends UnitTestCase
         $this->assertTrue($permission->timestamps);
     }
 
-    public function testPermissionFieldModelExists()
-    {
-        // PermissionField extends Laravel Nova Field which might not be available in test
-        // Just verify the file exists
-        $filePath = realpath(__DIR__ . '/../../src/PermissionField.php');
-        $this->assertFileExists($filePath);
-    }
-
     public function testRoleModel()
     {
         $role = new Role();

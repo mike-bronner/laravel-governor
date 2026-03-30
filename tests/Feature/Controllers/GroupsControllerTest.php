@@ -22,38 +22,51 @@ class GroupsControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testIndexPageWithAuth()
+    public function testIndexPageIsAccessible()
     {
-        // Verify user is authenticated
-        $this->assertTrue(auth()->check());
+        $response = $this->get(route('genealabs.laravel-governor.groups.index'));
+
+        $response->assertOk();
     }
 
-    public function testCreatePageWithAuth()
+    public function testCreatePageIsAccessible()
     {
-        // Verify SuperAdmin can access create
-        $this->assertTrue($this->user->hasRole('SuperAdmin'));
+        $response = $this->get(route('genealabs.laravel-governor.groups.create'));
+
+        $response->assertOk();
     }
 
-    public function testGroupCanBeCreated()
+    public function testStoreCreatesGroup()
     {
-        $groupName = 'TestGroup' . uniqid();
-        $group = Group::create(['name' => $groupName]);
+        $groupName = 'StoreGroup' . uniqid();
+        $entity = Entity::first();
 
+        $response = $this->post(route('genealabs.laravel-governor.groups.store'), [
+            'name' => $groupName,
+            'entity_names' => [$entity->name],
+        ]);
+
+        $response->assertRedirect();
         $this->assertDatabaseHas('governor_groups', ['name' => $groupName]);
     }
 
-    public function testEditPageRoute()
+    public function testEditPageIsAccessible()
     {
-        // Just verify route exists
-        $this->assertTrue(true);
+        $group = Group::create(['name' => 'EditGroup' . uniqid()]);
+
+        $response = $this->get(route('genealabs.laravel-governor.groups.edit', $group));
+
+        $response->assertOk();
     }
 
-    public function testGroupCanBeDeleted()
+    public function testDestroyDeletesGroup()
     {
-        $groupName = 'DeleteGroup' . uniqid();
+        $groupName = 'DelGroup' . uniqid();
         $group = Group::create(['name' => $groupName]);
-        $group->delete();
 
+        $response = $this->delete(route('genealabs.laravel-governor.groups.destroy', $group));
+
+        $response->assertRedirect();
         $this->assertDatabaseMissing('governor_groups', ['name' => $groupName]);
     }
 }

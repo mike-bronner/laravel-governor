@@ -20,23 +20,24 @@ class AssignmentsControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
-    public function testCreatePageWithAuth()
+    public function testEditPageIsAccessible()
     {
-        // Verify user is authenticated
-        $this->assertTrue(auth()->check());
+        $response = $this->get(route('genealabs.laravel-governor.assignments.edit', 0));
+
+        $response->assertOk();
     }
 
-    public function testAssignmentCanBeCreated()
+    public function testUpdateProcessesAssignments()
     {
         $otherUser = User::factory()->create();
 
-        // Assignments are processed via the Assignment model
-        $assignment = new \GeneaLabs\LaravelGovernor\Assignment();
-        $assignment->assignUsersToRoles([
-            'Member' => [$otherUser->id],
+        $response = $this->put(route('genealabs.laravel-governor.assignments.update', 0), [
+            'users' => [
+                'Member' => [$otherUser->id],
+            ],
         ]);
 
-        // Verify the user was assigned to Member
+        $response->assertRedirect();
         $this->assertTrue($otherUser->fresh()->roles->contains('Member'));
     }
 }

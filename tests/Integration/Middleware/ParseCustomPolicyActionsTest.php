@@ -27,20 +27,4 @@ class ParseCustomPolicyActionsTest extends UnitTestCase
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('OK', $response->getContent());
     }
-
-    public function testMiddlewareRegistersCustomPolicyActions()
-    {
-        $user = User::factory()->create();
-        $this->actingAs($user);
-
-        $middleware = new ParseCustomPolicyActions();
-        $request = Request::create('/test', 'GET');
-
-        $middleware->handle($request, function ($req) {
-            return new Response('OK');
-        });
-
-        // The middleware should have processed policies without errors
-        $this->assertTrue(true);
-    }
 }

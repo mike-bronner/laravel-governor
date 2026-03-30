@@ -13,10 +13,7 @@ class GroupModelTest extends UnitTestCase
     public function testEntitiesRelationship()
     {
         $entity = Entity::first();
-        if (!$entity) {
-            $this->assertTrue(true);
-            return;
-        }
+        $this->assertNotNull($entity, 'Expected at least one entity to exist from seeding');
 
         $groupName = 'RelGroup' . uniqid();
         $group = Group::create(['name' => $groupName]);
@@ -24,9 +21,7 @@ class GroupModelTest extends UnitTestCase
 
         $group->refresh();
 
-        // Group::entities is a hasMany using entity_name as FK
-        // The relationship should work if entities exist with the matching group_name
-        $this->assertTrue(true);
+        $this->assertTrue($group->entities->contains($entity));
     }
 
     public function testGroupHasStringPrimaryKey()

@@ -11,13 +11,6 @@
     <include>
       <directory suffix=".php">./src</directory>
     </include>
-    <exclude>
-      <directory suffix=".php">./src/Nova</directory>
-      <directory suffix=".php">./src/Http/Controllers/Nova</directory>
-      <file>./src/PermissionField.php</file>
-      <file>./src/PermissionsTool.php</file>
-      <file>./src/Http/Middleware/Authorize.php</file>
-    </exclude>
   </source>
   <testsuites>
     <testsuite name="Setup">

@@ -84,6 +84,4 @@ class PermissionTest extends UnitTestCase
 
         $this->assertNotNull($permission->role());
     }
-
-
 }

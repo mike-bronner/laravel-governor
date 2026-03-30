@@ -22,75 +22,72 @@ class RolesControllerTest extends IntegrationTestCase
         $this->actingAs($this->user);
     }
 
+    public function testIndexPageIsAccessible()
+    {
+        $response = $this->get(route('genealabs.laravel-governor.roles.index'));
+
+        $response->assertOk();
+    }
+
     public function testIndexPageRequiresAuth()
     {
         auth()->logout();
+
         $response = $this->get(route('genealabs.laravel-governor.roles.index'));
 
-        // Should require auth or have some redirect
-        $this->assertThat(
-            $response->status(),
-            $this->logicalOr(
-                $this->equalTo(200),
-                $this->equalTo(302),
-                $this->equalTo(403)
-            )
-        );
+        $response->assertRedirect();
     }
 
-    public function testCreatePageWithAuth()
+    public function testCreatePageIsAccessible()
     {
-        // Just test that the route is accessible to SuperAdmin
-        $this->assertTrue(auth()->check());
+        $response = $this->get(route('genealabs.laravel-governor.roles.create'));
+
+        $response->assertOk();
     }
 
-    public function testRoleCanBeCreated()
+    public function testStoreCreatesRole()
     {
-        $roleName = 'TestNewRole' . uniqid();
-        $role = Role::create(['name' => $roleName, 'description' => 'A test role for store testing']);
+        $roleName = 'StoreRole' . uniqid();
 
-        $this->assertDatabaseHas('governor_roles', ['name' => $roleName]);
-    }
-
-    public function testRoleExists()
-    {
-        $roleName = 'EditableRole' . uniqid();
-        $role = Role::create(['name' => $roleName, 'description' => 'desc']);
-
-        $this->assertDatabaseHas('governor_roles', ['name' => $roleName]);
-    }
-
-    public function testUpdateRoleUpdatesRecord()
-    {
-        $roleName = 'UpdatableRole' . uniqid();
-        $role = Role::create(['name' => $roleName, 'description' => 'desc']);
-        $originalRole = $role->fresh();
-
-        $this->assertDatabaseHas('governor_roles', ['name' => $roleName]);
-    }
-
-    public function testRoleCanBeDeleted()
-    {
-        $roleName = 'DeletableRole' . uniqid();
-        $role = Role::create(['name' => $roleName, 'description' => 'desc']);
-        $role->delete();
-
-        $this->assertDatabaseMissing('governor_roles', ['name' => $roleName]);
-    }
-
-    public function testRoleCanHavePermissions()
-    {
-        $roleName = 'PermRole' . uniqid();
-        $role = Role::create(['name' => $roleName, 'description' => 'desc']);
-        
-        Permission::create([
-            'role_name' => $roleName,
-            'entity_name' => 'Author (Laravel Governor)',
-            'action_name' => 'create',
-            'ownership_name' => 'any',
+        $response = $this->post(route('genealabs.laravel-governor.roles.store'), [
+            'name' => $roleName,
+            'description' => 'A test role',
         ]);
 
-        $role->refresh();
-        $this->assertTrue($role->permissions->isNotEmpty());
+        $response->assertRedirect();
+        $this->assertDatabaseHas('governor_roles', ['name' => $roleName]);
+    }
+
+    public function testEditPageIsAccessible()
+    {
+        $role = Role::create(['name' => 'EditRole' . uniqid(), 'description' => 'desc']);
+
+        $response = $this->get(route('genealabs.laravel-governor.roles.edit', $role));
+
+        $response->assertOk();
+    }
+
+    public function testUpdateUpdatesRole()
+    {
+        $role = Role::create(['name' => 'UpdRole' . uniqid(), 'description' => 'desc']);
+
+        $response = $this->put(route('genealabs.laravel-governor.roles.update', $role), [
+            'name' => $role->name,
+            'description' => 'updated description',
+            'permissions' => [],
+        ]);
+
+        $response->assertRedirect();
+    }
+
+    public function testDestroyDeletesRole()
+    {
+        $roleName = 'DelRole' . uniqid();
+        $role = Role::create(['name' => $roleName, 'description' => 'desc']);
+
+        $response = $this->delete(route('genealabs.laravel-governor.roles.destroy', $role));
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('governor_roles', ['name' => $roleName]);
     }
 }

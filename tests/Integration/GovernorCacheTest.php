@@ -204,6 +204,38 @@ class GovernorCacheTest extends IntegrationTestCase
         $this->assertTrue(Cache::has('governor:actions'));
     }
 
+    public function test_forget_clears_single_cache_key(): void
+    {
+        config(['genealabs-laravel-governor.cache.enabled' => true]);
+        config(['genealabs-laravel-governor.cache.ttl' => 3600]);
+
+        // Populate multiple cache keys
+        $this->governorCache->remember('actions', fn () => 'actions-data');
+        $this->governorCache->remember('entities', fn () => 'entities-data');
+
+        $this->assertTrue(Cache::has('governor:actions'));
+        $this->assertTrue(Cache::has('governor:entities'));
+
+        // Forget only 'actions'
+        $this->governorCache->forget('actions');
+
+        $this->assertFalse(Cache::has('governor:actions'));
+        $this->assertTrue(Cache::has('governor:entities'), 'Other keys should remain after forget()');
+    }
+
+    public function test_forget_is_safe_when_key_does_not_exist(): void
+    {
+        config(['genealabs-laravel-governor.cache.enabled' => true]);
+        config(['genealabs-laravel-governor.cache.ttl' => 3600]);
+
+        $this->governorCache->flush();
+
+        // Should not throw
+        $this->governorCache->forget('nonexistent');
+
+        $this->assertFalse(Cache::has('governor:nonexistent'));
+    }
+
     public function test_flush_clears_all_governor_cache_keys(): void
     {
         config(['genealabs-laravel-governor.cache.enabled' => true]);

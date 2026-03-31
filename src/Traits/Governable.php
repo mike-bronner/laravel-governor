@@ -97,7 +97,6 @@ trait Governable
      */
     public function getOwnedByAttribute(): ?Model
     {
-        $this->unsetRelation('governorOwner');
         $ownable = $this->governorOwner;
 
         if ($ownable) {
@@ -109,9 +108,6 @@ trait Governable
 
     public function getGovernorOwnedByAttribute()
     {
-        // Always unset and reload to ensure fresh query, since ownership tracking
-        // moved to polymorphic table and may not be pre-loaded.
-        $this->unsetRelation('governorOwner');
         $ownable = $this->governorOwner;
 
         if ($ownable) {

@@ -34,6 +34,9 @@ class Team extends Model
         );
     }
 
+    /**
+     * @deprecated Use governorOwner() relationship instead.
+     */
     public function owner(): BelongsTo
     {
         $authClass = config("genealabs-laravel-governor.models.auth");
@@ -100,7 +103,8 @@ class Team extends Model
 
     public function getOwnerNameAttribute(): string
     {
-        return $this->owner->name
+        return $this->governorOwner?->owner?->name
+            ?? $this->owner?->name
             ?? "";
     }
 
@@ -108,8 +112,28 @@ class Team extends Model
     {
         $this->loadMissing('members');
 
+        // Update polymorphic ownership
+        $ownableClass = config(
+            "genealabs-laravel-governor.models.ownable",
+            \GeneaLabs\LaravelGovernor\GovernorOwnable::class,
+        );
+
+        (new $ownableClass)->updateOrCreate(
+            [
+                'ownable_type' => get_class($this),
+                'ownable_id' => $this->getKey(),
+            ],
+            [
+                'user_id' => $newOwner->getKey(),
+            ],
+        );
+
+        // Deprecated: maintain governor_owned_by for backward compatibility
         $this->governor_owned_by = $newOwner->getKey();
         $this->save();
+
+        // Clear cached relationship
+        $this->unsetRelation('governorOwner');
 
         return $this;
     }

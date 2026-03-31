@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GeneaLabs\LaravelGovernor\Tests\Integration;
 
+use GeneaLabs\LaravelGovernor\Entity;
 use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
 use Illuminate\Support\Facades\DB;
 
@@ -103,10 +104,10 @@ class EntityRenameTest extends UnitTestCase
         $this->assertDatabaseHas('governor_entities', ['name' => 'Owned Resource (Laravel Governor)']);
     }
 
-    public function testRenamedEntitiesAreExcludedFromEntityQueries(): void
+    public function testRolesControllerFiltersRenamedInternalEntities(): void
     {
-        // Verify that querying entities while excluding internal ones
-        // uses the new names, not the old ones
+        // Verify the filters in RolesController use the new entity names
+        // and that internal entities are excluded from the query
         $internalNames = [
             'Permission (Laravel Governor)',
             'Entity (Laravel Governor)',
@@ -115,13 +116,72 @@ class EntityRenameTest extends UnitTestCase
             'Team Invitation (Laravel Governor)',
         ];
 
-        $visibleEntities = DB::table('governor_entities')
+        $visibleEntities = (new Entity)
             ->whereNotIn('name', $internalNames)
+            ->orderBy('group_name')
+            ->orderBy('name')
             ->pluck('name');
 
-        // Internal entities should not appear in filtered results
+        // None of the internal entities should appear
         foreach ($internalNames as $internalName) {
-            $this->assertNotContains($internalName, $visibleEntities->toArray());
+            $this->assertNotContains(
+                $internalName,
+                $visibleEntities->toArray(),
+                "Internal entity '{$internalName}' should be filtered out"
+            );
+        }
+    }
+
+    public function testTeamsControllerFiltersRenamedInternalEntities(): void
+    {
+        // Verify the filters in TeamsController use the new entity names
+        $internalNames = [
+            'Permission (Laravel Governor)',
+            'Entity (Laravel Governor)',
+            'Ability (Laravel Governor)',
+            'Owned Resource (Laravel Governor)',
+            'Team Invitation (Laravel Governor)',
+        ];
+
+        $visibleEntities = (new Entity)
+            ->whereNotIn('name', $internalNames)
+            ->orderBy('group_name')
+            ->orderBy('name')
+            ->pluck('name');
+
+        // None of the internal entities should appear
+        foreach ($internalNames as $internalName) {
+            $this->assertNotContains(
+                $internalName,
+                $visibleEntities->toArray(),
+                "Internal entity '{$internalName}' should be filtered out"
+            );
+        }
+    }
+
+    public function testGroupsControllerFiltersRenamedInternalEntities(): void
+    {
+        // Verify the filters in GroupsController use the new entity names
+        $internalNames = [
+            'Permission (Laravel Governor)',
+            'Entity (Laravel Governor)',
+            'Ability (Laravel Governor)',
+            'Owned Resource (Laravel Governor)',
+            'Team Invitation (Laravel Governor)',
+        ];
+
+        $visibleEntities = (new Entity)
+            ->whereNotIn('name', $internalNames)
+            ->orderBy('name')
+            ->pluck('name');
+
+        // None of the internal entities should appear
+        foreach ($internalNames as $internalName) {
+            $this->assertNotContains(
+                $internalName,
+                $visibleEntities->toArray(),
+                "Internal entity '{$internalName}' should be filtered out"
+            );
         }
     }
 }

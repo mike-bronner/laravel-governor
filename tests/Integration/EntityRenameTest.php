@@ -5,19 +5,49 @@ declare(strict_types=1);
 namespace GeneaLabs\LaravelGovernor\Tests\Integration;
 
 use GeneaLabs\LaravelGovernor\Entity;
-use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
+use GeneaLabs\LaravelGovernor\Group;
+use GeneaLabs\LaravelGovernor\Http\Controllers\GroupsController;
+use GeneaLabs\LaravelGovernor\Http\Controllers\RolesController;
+use GeneaLabs\LaravelGovernor\Http\Controllers\TeamsController;
+use GeneaLabs\LaravelGovernor\Role;
+use GeneaLabs\LaravelGovernor\Team;
+use GeneaLabs\LaravelGovernor\Tests\Fixtures\User;
+use GeneaLabs\LaravelGovernor\Tests\IntegrationTestCase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
-class EntityRenameTest extends UnitTestCase
+class EntityRenameTest extends IntegrationTestCase
 {
+    protected User $user;
+
+    /** @var list<string> */
+    private array $internalEntities = [
+        'Ability (Laravel Governor)',
+        'Owned Resource (Laravel Governor)',
+        'Permission (Laravel Governor)',
+        'Entity (Laravel Governor)',
+        'Team Invitation (Laravel Governor)',
+    ];
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = User::factory()->create();
+        $this->user->roles()->attach('SuperAdmin');
+        $this->actingAs($this->user);
+    }
+
+    // ──────────────────────────────────────────────
+    // Migration tests
+    // ──────────────────────────────────────────────
+
     public function testMigrationRenamesActionEntityToAbility(): void
     {
-        // Revert to pre-migration state
         DB::table('governor_entities')
             ->where('name', 'Ability (Laravel Governor)')
             ->update(['name' => 'Action (Laravel Governor)']);
 
-        // Run the rename migration
         $migration = require __DIR__ . '/../../database/migrations/0001_01_02_000013_rename_action_ownership_entities.php';
         $migration->up();
 
@@ -31,12 +61,10 @@ class EntityRenameTest extends UnitTestCase
 
     public function testMigrationRenamesOwnershipEntityToOwnedResource(): void
     {
-        // Revert to pre-migration state
         DB::table('governor_entities')
             ->where('name', 'Owned Resource (Laravel Governor)')
             ->update(['name' => 'Ownership (Laravel Governor)']);
 
-        // Run the rename migration
         $migration = require __DIR__ . '/../../database/migrations/0001_01_02_000013_rename_action_ownership_entities.php';
         $migration->up();
 
@@ -50,7 +78,6 @@ class EntityRenameTest extends UnitTestCase
 
     public function testMigrationRollbackRestoresOriginalNames(): void
     {
-        // Current state has new names (from setUp migrations)
         $migration = require __DIR__ . '/../../database/migrations/0001_01_02_000013_rename_action_ownership_entities.php';
         $migration->down();
 
@@ -70,7 +97,6 @@ class EntityRenameTest extends UnitTestCase
 
     public function testMigrationIsIdempotentWhenAlreadyRenamed(): void
     {
-        // New names already exist from setUp — running up again should not fail
         $migration = require __DIR__ . '/../../database/migrations/0001_01_02_000013_rename_action_ownership_entities.php';
         $migration->up();
 
@@ -84,7 +110,6 @@ class EntityRenameTest extends UnitTestCase
 
     public function testMigrationRenamesBothEntitiesInSingleRun(): void
     {
-        // Revert both to pre-migration state
         DB::table('governor_entities')
             ->where('name', 'Ability (Laravel Governor)')
             ->update(['name' => 'Action (Laravel Governor)']);
@@ -95,93 +120,105 @@ class EntityRenameTest extends UnitTestCase
         $migration = require __DIR__ . '/../../database/migrations/0001_01_02_000013_rename_action_ownership_entities.php';
         $migration->up();
 
-        // Both old names gone
         $this->assertDatabaseMissing('governor_entities', ['name' => 'Action (Laravel Governor)']);
         $this->assertDatabaseMissing('governor_entities', ['name' => 'Ownership (Laravel Governor)']);
-
-        // Both new names present
         $this->assertDatabaseHas('governor_entities', ['name' => 'Ability (Laravel Governor)']);
         $this->assertDatabaseHas('governor_entities', ['name' => 'Owned Resource (Laravel Governor)']);
     }
 
-    public function testRolesControllerFiltersRenamedInternalEntities(): void
+    // ──────────────────────────────────────────────
+    // Controller integration tests — verify renamed
+    // internal entities are filtered from view data
+    // ──────────────────────────────────────────────
+
+    public function testRolesCreateFiltersRenamedInternalEntities(): void
     {
-        // Verify the filters in RolesController use the new entity names
-        // and that internal entities are excluded from the query
-        $internalNames = [
-            'Permission (Laravel Governor)',
-            'Entity (Laravel Governor)',
-            'Ability (Laravel Governor)',
-            'Owned Resource (Laravel Governor)',
-            'Team Invitation (Laravel Governor)',
-        ];
+        Gate::before(fn () => true);
 
-        $visibleEntities = (new Entity)
-            ->whereNotIn('name', $internalNames)
-            ->orderBy('group_name')
-            ->orderBy('name')
-            ->pluck('name');
+        $controller = app(RolesController::class);
+        $view = $controller->create();
+        $entities = $view->getData()['entities'];
+        $entityNames = $entities->pluck('name')->toArray();
 
-        // None of the internal entities should appear
-        foreach ($internalNames as $internalName) {
-            $this->assertNotContains(
-                $internalName,
-                $visibleEntities->toArray(),
-                "Internal entity '{$internalName}' should be filtered out"
-            );
+        foreach ($this->internalEntities as $name) {
+            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from roles create view");
         }
     }
 
-    public function testTeamsControllerFiltersRenamedInternalEntities(): void
+    public function testRolesEditFiltersRenamedInternalEntities(): void
     {
-        // Verify the filters in TeamsController use the new entity names
-        $internalNames = [
-            'Permission (Laravel Governor)',
-            'Entity (Laravel Governor)',
-            'Ability (Laravel Governor)',
-            'Owned Resource (Laravel Governor)',
-            'Team Invitation (Laravel Governor)',
-        ];
+        Gate::before(fn () => true);
 
-        $visibleEntities = (new Entity)
-            ->whereNotIn('name', $internalNames)
-            ->orderBy('group_name')
-            ->orderBy('name')
-            ->pluck('name');
+        $role = Role::firstOrCreate(
+            ['name' => 'TestEditRole'],
+            ['description' => 'test']
+        );
 
-        // None of the internal entities should appear
-        foreach ($internalNames as $internalName) {
-            $this->assertNotContains(
-                $internalName,
-                $visibleEntities->toArray(),
-                "Internal entity '{$internalName}' should be filtered out"
-            );
+        $controller = app(RolesController::class);
+        $view = $controller->edit($role);
+        $entities = $view->getData()['entities'];
+        $entityNames = $entities->pluck('name')->toArray();
+
+        foreach ($this->internalEntities as $name) {
+            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from roles edit view");
         }
     }
 
-    public function testGroupsControllerFiltersRenamedInternalEntities(): void
+    public function testGroupsCreateFiltersRenamedInternalEntities(): void
     {
-        // Verify the filters in GroupsController use the new entity names
-        $internalNames = [
-            'Permission (Laravel Governor)',
-            'Entity (Laravel Governor)',
-            'Ability (Laravel Governor)',
-            'Owned Resource (Laravel Governor)',
-            'Team Invitation (Laravel Governor)',
-        ];
+        $controller = app(GroupsController::class);
+        $view = $controller->create();
+        $entities = $view->getData()['entities'];
+        $entityNames = $entities->pluck('name')->toArray();
 
-        $visibleEntities = (new Entity)
-            ->whereNotIn('name', $internalNames)
-            ->orderBy('name')
-            ->pluck('name');
+        foreach ($this->internalEntities as $name) {
+            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from groups create view");
+        }
+    }
 
-        // None of the internal entities should appear
-        foreach ($internalNames as $internalName) {
-            $this->assertNotContains(
-                $internalName,
-                $visibleEntities->toArray(),
-                "Internal entity '{$internalName}' should be filtered out"
-            );
+    public function testGroupsEditFiltersRenamedInternalEntities(): void
+    {
+        $group = Group::firstOrCreate(
+            ['name' => 'TestEditGroup'],
+            ['description' => 'test']
+        );
+
+        $controller = app(GroupsController::class);
+        $view = $controller->edit($group);
+        $entities = $view->getData()['entities'];
+        $entityNames = $entities->pluck('name')->toArray();
+
+        foreach ($this->internalEntities as $name) {
+            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from groups edit view");
+        }
+    }
+
+    public function testTeamsCreateFiltersRenamedInternalEntities(): void
+    {
+        $controller = app(TeamsController::class);
+        $view = $controller->create();
+        $entities = $view->getData()['entities'];
+        $entityNames = $entities->pluck('name')->toArray();
+
+        foreach ($this->internalEntities as $name) {
+            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from teams create view");
+        }
+    }
+
+    public function testTeamsEditFiltersRenamedInternalEntities(): void
+    {
+        $team = Team::firstOrCreate(
+            ['name' => 'TestEditTeam'],
+            ['description' => 'test']
+        );
+
+        $controller = app(TeamsController::class);
+        $view = $controller->edit($team);
+        $entities = $view->getData()['entities'];
+        $entityNames = $entities->pluck('name')->toArray();
+
+        foreach ($this->internalEntities as $name) {
+            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from teams edit view");
         }
     }
 }

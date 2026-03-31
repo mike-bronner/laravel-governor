@@ -62,4 +62,22 @@ class TeamInvitationTest extends UnitTestCase
             }
         );
     }
+
+    public function testNotificationHandlesNullOwnerAndTeamGracefully()
+    {
+        $invitation = (new TeamInvitation)->create([
+            "team_id" => $this->team->id,
+            "email" => "test3@example.com",
+        ]);
+
+        // Remove the team and ownership to test null-safe accessors
+        $invitation->setRelation('team', null);
+        $invitation->setRelation('governorOwner', null);
+
+        $notification = new TeamInvitationNotification($invitation);
+        $mailData = $notification->toMail(new AnonymousNotifiable)->toArray();
+
+        $this->assertStringContainsString("A team admin", implode(" ", $mailData["introLines"]));
+        $this->assertStringContainsString("the team", implode(" ", $mailData["introLines"]));
+    }
 }

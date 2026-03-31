@@ -138,7 +138,6 @@ abstract class BasePolicy
         $ownership = 'other';
 
         if ($model) {
-            $model->unsetRelation('governorOwner');
             $ownable = $model->governorOwner;
             $ownerId = $ownable?->user_id;
 

@@ -2,6 +2,7 @@
 
 namespace GeneaLabs\LaravelGovernor\Tests\Integration;
 
+use GeneaLabs\LaravelGovernor\GovernorOwnable;
 use GeneaLabs\LaravelGovernor\Team;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\User;
 use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
@@ -107,6 +108,65 @@ class TransferOwnershipTest extends UnitTestCase
         );
 
         $response->assertSessionHasErrors("new_owner_id");
+    }
+
+    public function testTransferOwnershipCreatesPolymorphicRecord(): void
+    {
+        $this->team->transferOwnership($this->member);
+
+        $this->assertDatabaseHas('governor_ownables', [
+            'ownable_type' => Team::class,
+            'ownable_id' => $this->team->getKey(),
+            'user_id' => $this->member->getKey(),
+        ]);
+    }
+
+    public function testTransferOwnershipUpdatesExistingPolymorphicRecord(): void
+    {
+        // First transfer
+        $this->team->transferOwnership($this->member);
+
+        // Second transfer back
+        $this->team->transferOwnership($this->owner);
+
+        $this->assertDatabaseHas('governor_ownables', [
+            'ownable_type' => Team::class,
+            'ownable_id' => $this->team->getKey(),
+            'user_id' => $this->owner->getKey(),
+        ]);
+
+        // Should only have one record, not two
+        $count = GovernorOwnable::where('ownable_type', Team::class)
+            ->where('ownable_id', $this->team->getKey())
+            ->count();
+        $this->assertEquals(1, $count);
+    }
+
+    public function testTransferOwnershipClearsGovernorOwnerRelation(): void
+    {
+        $this->team->transferOwnership($this->member);
+
+        $this->assertFalse($this->team->relationLoaded('governorOwner'));
+    }
+
+    public function testOwnerNameUsesPolymorphicRelationship(): void
+    {
+        $this->team->transferOwnership($this->member);
+        $this->team->refresh();
+
+        $this->assertEquals($this->member->name, $this->team->ownerName);
+    }
+
+    public function testOwnerNameFallsBackToDeprecatedOwnerRelationship(): void
+    {
+        // Remove polymorphic record but keep column — should fall back to owner()
+        GovernorOwnable::where('ownable_type', Team::class)
+            ->where('ownable_id', $this->team->getKey())
+            ->delete();
+
+        $freshTeam = Team::find($this->team->id);
+
+        $this->assertEquals($this->owner->name, $freshTeam->ownerName);
     }
 
     public function testPreviousOwnerCannotPerformOwnerActionsAfterTransfer(): void

@@ -27,7 +27,6 @@ class GroupsController extends Controller
     public function create(): View
     {
         $entities = (new Entity)
-            ->whereNotIn('name', ['Permission (Laravel Governor)', 'Entity (Laravel Governor)', "Ability (Laravel Governor)", "Owned Resource (Laravel Governor)", "Team Invitation (Laravel Governor)"])
             ->orderBy("name")
             ->get();
 
@@ -47,7 +46,6 @@ class GroupsController extends Controller
     public function edit(Group $group): View
     {
         $entities = (new Entity)
-            ->whereNotIn('name', ['Permission (Laravel Governor)', 'Entity (Laravel Governor)', "Ability (Laravel Governor)", "Owned Resource (Laravel Governor)", "Team Invitation (Laravel Governor)"])
             ->orderBy("name")
             ->get();
 

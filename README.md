@@ -345,15 +345,8 @@ they own or belong to their teams. If neither, the query returns no results.
 | `scopeViewable` | `view` | `BlogPost::viewable()->get()` |
 | `scopeViewAnyable` | `viewAny` | `BlogPost::viewAnyable()->get()` |
 
-These scopes are also available as filter methods that accept a `Builder`
-instance, useful in Nova or other admin panels:
-
-| Method | Usage |
-|--------|-------|
-| `filterDeletable(Builder $query)` | `$model->filterDeletable($query)` |
-| `filterUpdatable(Builder $query)` | `$model->filterUpdatable($query)` |
-| `filterViewable(Builder $query)` | `$model->filterViewable($query)` |
-| `filterViewAnyable(Builder $query)` | `$model->filterViewAnyable($query)` |
+These scopes can be applied directly to any query builder instance, making
+them useful in Nova or other admin panels:
 
 **Nova example:**
 ```php
@@ -364,13 +357,7 @@ abstract class Resource extends NovaResource
 {
     public static function indexQuery(NovaRequest $request, $query)
     {
-        $model = $query->getModel();
-
-        if ($model && is_object($model) && method_exists($model, 'filterViewAnyable')) {
-            $query = $model->filterViewAnyable($query);
-        }
-
-        return $query;
+        return $query->viewAnyable();
     }
 }
 ```

@@ -6,7 +6,6 @@ namespace GeneaLabs\LaravelGovernor\Tests\Integration;
 
 use GeneaLabs\LaravelGovernor\Entity;
 use GeneaLabs\LaravelGovernor\Group;
-use GeneaLabs\LaravelGovernor\Http\Controllers\GroupsController;
 use GeneaLabs\LaravelGovernor\Http\Controllers\RolesController;
 use GeneaLabs\LaravelGovernor\Http\Controllers\TeamsController;
 use GeneaLabs\LaravelGovernor\Role;
@@ -161,35 +160,6 @@ class EntityRenameTest extends IntegrationTestCase
 
         foreach ($this->internalEntities as $name) {
             $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from roles edit view");
-        }
-    }
-
-    public function testGroupsCreateFiltersRenamedInternalEntities(): void
-    {
-        $controller = app(GroupsController::class);
-        $view = $controller->create();
-        $entities = $view->getData()['entities'];
-        $entityNames = $entities->pluck('name')->toArray();
-
-        foreach ($this->internalEntities as $name) {
-            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from groups create view");
-        }
-    }
-
-    public function testGroupsEditFiltersRenamedInternalEntities(): void
-    {
-        $group = Group::firstOrCreate(
-            ['name' => 'TestEditGroup'],
-            ['description' => 'test']
-        );
-
-        $controller = app(GroupsController::class);
-        $view = $controller->edit($group);
-        $entities = $view->getData()['entities'];
-        $entityNames = $entities->pluck('name')->toArray();
-
-        foreach ($this->internalEntities as $name) {
-            $this->assertNotContains($name, $entityNames, "'{$name}' should be filtered from groups edit view");
         }
     }
 

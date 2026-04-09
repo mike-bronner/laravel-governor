@@ -1,5 +1,5 @@
 {
-    "name": "genealabs/laravel-governor",
+    "name": "mike-bronner/laravel-governor",
     "description": "Managing policy and control in Laravel.",
     "license": "MIT",
     "authors": [

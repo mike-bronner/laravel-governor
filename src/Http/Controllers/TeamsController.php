@@ -30,7 +30,7 @@ class TeamsController extends Controller
         $teamClass = config("genealabs-laravel-governor.models.team");
 
         $entities = (new $entityClass)
-            ->whereNotIn('name', ['Permission (Laravel Governor)', 'Entity (Laravel Governor)', "Action (Laravel Governor)", "Ownership (Laravel Governor)", "Team Invitation (Laravel Governor)"])
+            ->whereNotIn('name', ['Permission (Laravel Governor)', 'Entity (Laravel Governor)', "Ability (Laravel Governor)", "Owned Resource (Laravel Governor)", "Team Invitation (Laravel Governor)"])
             ->orderBy("group_name")
             ->orderBy("name")
             ->get();
@@ -62,7 +62,7 @@ class TeamsController extends Controller
         $ownershipClass = config("genealabs-laravel-governor.models.ownership");
 
         $entities = (new $entityClass)
-            ->whereNotIn('name', ['Permission (Laravel Governor)', 'Entity (Laravel Governor)', "Action (Laravel Governor)", "Ownership (Laravel Governor)", "Team Invitation (Laravel Governor)"])
+            ->whereNotIn('name', ['Permission (Laravel Governor)', 'Entity (Laravel Governor)', "Ability (Laravel Governor)", "Owned Resource (Laravel Governor)", "Team Invitation (Laravel Governor)"])
             ->orderBy("group_name")
             ->orderBy("name")
             ->get();

@@ -45,6 +45,7 @@ return [
         "role" => GeneaLabs\LaravelGovernor\Role::class,
         "team" => GeneaLabs\LaravelGovernor\Team::class,
         "invitation" => GeneaLabs\LaravelGovernor\TeamInvitation::class,
+        "ownable" => GeneaLabs\LaravelGovernor\GovernorOwnable::class,
     ],
 
     /*

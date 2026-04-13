@@ -78,4 +78,63 @@ class CreatedListenerTest extends UnitTestCase
 
         $this->assertEquals($otherUser->id, $author->governor_owned_by);
     }
+
+    public function testCreatedListenerCreatesPolymorphicOwnershipForGovernableModel()
+    {
+        $author = Author::factory()->create();
+
+        $this->assertDatabaseHas('governor_ownables', [
+            'ownable_type' => Author::class,
+            'ownable_id' => $author->getKey(),
+            'user_id' => $this->user->id,
+        ]);
+    }
+
+    public function testCreatedListenerSkipsOwnershipForNonGovernableModel()
+    {
+        $listener = new CreatedListener();
+        $model = AuthorWithoutGovernable::create(['name' => 'Test Non-Governable']);
+
+        $this->assertDatabaseMissing('governor_ownables', [
+            'ownable_type' => AuthorWithoutGovernable::class,
+            'ownable_id' => $model->getKey(),
+        ]);
+    }
+
+    public function testCreatedListenerSkipsOwnershipWhenNoAuthAndNoExplicitOwner()
+    {
+        auth()->logout();
+
+        $listener = new CreatedListener();
+
+        // Create an author without auth — the CreatingListener won't set governor_owned_by
+        // and there's no auth user, so no ownership record should be created
+        $author = new Author(['name' => 'Unowned']);
+        // Bypass the creating listener's auth check by setting no owner
+        $author->setRawAttributes(array_merge($author->getAttributes(), ['name' => 'Unowned']));
+
+        // Directly call the listener to test the no-owner path
+        $author->saveQuietly();
+        $listener->handle('eloquent.created: ' . Author::class, [$author]);
+
+        $this->assertDatabaseMissing('governor_ownables', [
+            'ownable_type' => Author::class,
+            'ownable_id' => $author->getKey(),
+        ]);
+    }
+
+    public function testCreatedListenerUsesExplicitColumnValueForOwnership()
+    {
+        $otherUser = User::factory()->create();
+
+        $author = new Author(['name' => 'Explicit Owner']);
+        $author->governor_owned_by = $otherUser->id;
+        $author->save();
+
+        $this->assertDatabaseHas('governor_ownables', [
+            'ownable_type' => Author::class,
+            'ownable_id' => $author->getKey(),
+            'user_id' => $otherUser->id,
+        ]);
+    }
 }

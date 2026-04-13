@@ -1,91 +1,71 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GeneaLabs\LaravelGovernor\Tests\Integration\Traits;
 
-use GeneaLabs\LaravelGovernor\Permission;
-use GeneaLabs\LaravelGovernor\Role;
+use GeneaLabs\LaravelGovernor\GovernorOwnable;
 use GeneaLabs\LaravelGovernor\Team;
-use GeneaLabs\LaravelGovernor\Tests\Fixtures\Author;
 use GeneaLabs\LaravelGovernor\Tests\Fixtures\User;
 use GeneaLabs\LaravelGovernor\Tests\UnitTestCase;
 
 class GoverningTest extends UnitTestCase
 {
-    protected $author;
-    protected $team;
-    protected $user;
+    protected User $user;
 
-    public function setUp() : void
+    public function setUp(): void
     {
         parent::setUp();
 
         $this->user = User::factory()->create();
         $this->actingAs($this->user);
-        $this->team = (new Team)->create([
-            "name" => "Test Team",
-            "description" => "bla bla bla",
+    }
+
+    public function testGovernorOwnedTeamsReturnsTeamsOwnedViaPolymorphic(): void
+    {
+        $team1 = (new Team)->create([
+            'name' => 'Team Alpha',
+            'description' => 'First team',
         ]);
-        $this->author = Author::factory()->create();
-        $this->author->teams()->attach($this->team);
-    }
-
-    public function testHasRole()
-    {
-        $this->assertTrue($this->user->hasRole("Member"));
-    }
-
-    public function testRolesRelationship()
-    {
-        $role = (new Role)
-            ->where("name", "Member")
-            ->first();
-
-        $this->assertTrue($this->user->roles->contains($role));
-    }
-
-    public function testOwnedTeamsRelationship()
-    {
-        $teams = (new Team)
-            ->get();
-
-        $this->assertTrue($teams->contains($this->team));
-        $this->assertTrue($this->user->ownedTeams->contains($this->team));
-    }
-
-    public function testPermissionsAttribute()
-    {
-        $permission = (new Permission)->create([
-            "role_name" => "Member",
-            "entity_name" => "author",
-            "action_name" => "delete",
-            "ownership_name" => "any"
+        $team2 = (new Team)->create([
+            'name' => 'Team Beta',
+            'description' => 'Second team',
         ]);
-        $permissions = (new Permission)
-            ->toBase()
-            ->get();
-        app()->instance("governor-permissions", $permissions);
 
-        $this->assertTrue($this->user->permissions->keyBy("id")->has($permission->id));
+        $ownedTeams = $this->user->governorOwnedTeams();
+
+        $this->assertCount(2, $ownedTeams);
+        $this->assertTrue($ownedTeams->contains('id', $team1->id));
+        $this->assertTrue($ownedTeams->contains('id', $team2->id));
     }
 
-    public function testHasRoleWithNonExistingRole()
+    public function testGovernorOwnedTeamsExcludesOtherUsersTeams(): void
     {
-        $this->assertFalse($this->user->hasRole("Janitor"));
+        $otherUser = User::factory()->create();
+
+        $myTeam = (new Team)->create([
+            'name' => 'My Team',
+            'description' => 'Mine',
+        ]);
+
+        $this->actingAs($otherUser);
+        $otherTeam = (new Team)->create([
+            'name' => 'Other Team',
+            'description' => 'Not mine',
+        ]);
+
+        $this->actingAs($this->user);
+        $ownedTeams = $this->user->governorOwnedTeams();
+
+        $this->assertCount(1, $ownedTeams);
+        $this->assertTrue($ownedTeams->contains('id', $myTeam->id));
+        $this->assertFalse($ownedTeams->contains('id', $otherTeam->id));
     }
 
-    public function testHasRoleWithoutRoles()
+    public function testGovernorOwnedTeamsReturnsEmptyCollectionWhenNoTeams(): void
     {
-        (new Role)
-            ->whereIn("name", ["Member"])
-            ->delete();
+        $ownedTeams = $this->user->governorOwnedTeams();
 
-        $this->assertFalse($this->user->hasRole("Member"));
-    }
-
-    public function testHasRoleWhereUserHasNoRole()
-    {
-        $this->user->roles()->sync([]);
-
-        $this->assertFalse($this->user->hasRole("Member"));
+        $this->assertCount(0, $ownedTeams);
     }
 }

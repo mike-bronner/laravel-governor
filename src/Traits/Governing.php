@@ -35,12 +35,31 @@ trait Governing
         return $this->belongsToMany($roleClass, 'governor_role_user', 'user_id', 'role_name');
     }
 
+    /**
+     * @deprecated Use governorOwnedTeams() for polymorphic ownership lookup.
+     */
     public function ownedTeams(): HasMany
     {
         return $this->hasMany(
             config("genealabs-laravel-governor.models.team"),
             "governor_owned_by"
         );
+    }
+
+    public function governorOwnedTeams(): Collection
+    {
+        $teamClass = config("genealabs-laravel-governor.models.team");
+        $ownableClass = config(
+            "genealabs-laravel-governor.models.ownable",
+            \GeneaLabs\LaravelGovernor\GovernorOwnable::class,
+        );
+
+        $teamIds = (new $ownableClass)
+            ->where('ownable_type', $teamClass)
+            ->where('user_id', $this->getKey())
+            ->pluck('ownable_id');
+
+        return (new $teamClass)->whereIn('id', $teamIds)->get();
     }
 
     public function teams(): BelongsToMany
